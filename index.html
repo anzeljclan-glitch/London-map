@@ -10,10 +10,13 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'DM Sans', sans-serif; background: #0d0d0d; color: #f0ebe0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-.header { background: #0d0d0d; padding: 10px 20px; display: flex; align-items: center; gap: 20px; border-bottom: 1px solid #222; flex-shrink: 0; z-index: 1000; }
+.header { background: #0d0d0d; padding: 10px 20px; display: flex; align-items: center; gap: 20px; border-bottom: 1px solid #222; flex-shrink: 0; z-index: 1000; flex-wrap: wrap; }
 .header h1 { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 900; color: #f0ebe0; letter-spacing: -0.5px; }
 .header h1 em { color: #c9973a; font-style: italic; }
-.day-filters { display: flex; gap: 8px; flex-wrap: wrap; }
+.header-toggle { background: #1a1a1a; border: 1px solid #333; color: #aaa; border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer; margin-left: auto; transition: all 0.2s; white-space: nowrap; }
+.header-toggle:hover { background: #222; color: #fff; }
+.day-filters { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; padding-bottom: 4px; }
+.day-filters.hidden { display: none; }
 .day-btn { padding: 5px 14px; border-radius: 20px; border: 2px solid; font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.2s; background: transparent; letter-spacing: 0.5px; }
 .day-btn.active { color: #0d0d0d !important; }
 .day-btn[data-day="all"] { border-color: #888; color: #888; }
@@ -34,24 +37,25 @@ body { font-family: 'DM Sans', sans-serif; background: #0d0d0d; color: #f0ebe0; 
 .day-btn[data-day="7"].active { background: #FF85A1; }
 .day-btn[data-day="food"] { border-color: #98FB98; color: #98FB98; }
 .day-btn[data-day="food"].active { background: #98FB98; }
-.stats { margin-left: auto; font-size: 11px; color: #666; font-family: 'DM Mono', monospace; white-space: nowrap; }
-.main { display: flex; flex: 1; overflow: hidden; }
-.sidebar { width: 300px; min-width: 260px; background: #111; border-right: 1px solid #222; overflow-y: auto; flex-shrink: 0; font-size: 12px; }
+.main { display: flex; flex: 1; overflow: hidden; position: relative; }
+.sidebar { width: 300px; min-width: 300px; background: #111; border-right: 1px solid #222; overflow-y: auto; flex-shrink: 0; font-size: 12px; transition: width 0.3s, min-width 0.3s, opacity 0.2s; }
+.sidebar.collapsed { width: 0; min-width: 0; opacity: 0; overflow: hidden; }
 .sidebar::-webkit-scrollbar { width: 4px; }
 .sidebar::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+.sidebar-toggle { position: absolute; top: 50%; left: 300px; transform: translateY(-50%); z-index: 1001; background: #1a1a1a; border: 1px solid #333; border-left: none; color: #aaa; border-radius: 0 6px 6px 0; width: 20px; height: 60px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 11px; transition: left 0.3s, background 0.2s; }
+.sidebar-toggle:hover { background: #2a2a2a; color: #fff; }
+.sidebar-toggle.collapsed { left: 0; }
 .day-group { border-bottom: 1px solid #1a1a1a; }
-.day-header { padding: 10px 14px 8px; font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 700; position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 8px; cursor: pointer; letter-spacing: -0.2px; }
+.day-header { padding: 10px 14px 8px; font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 700; position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 8px; letter-spacing: -0.2px; }
 .day-header .day-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 .day-header .day-count { font-family: 'DM Mono', monospace; font-size: 10px; opacity: 0.6; margin-left: auto; }
 .place-row { padding: 7px 14px 7px 28px; cursor: pointer; transition: background 0.15s; display: flex; align-items: flex-start; gap: 8px; border-left: 3px solid transparent; }
 .place-row:hover { background: #1a1a1a; }
-.place-row.active { background: #1e1e1e; }
 .place-row .num { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; opacity: 0.5; min-width: 22px; padding-top: 2px; }
 .place-row .emoji { font-size: 13px; min-width: 18px; }
 .place-row .name { flex: 1; font-size: 11.5px; line-height: 1.4; color: #ccc; }
 .place-row .stay { font-family: 'DM Mono', monospace; font-size: 9px; color: #666; white-space: nowrap; padding-top: 2px; }
 .transport-row-s { padding: 3px 14px 3px 62px; font-family: 'DM Mono', monospace; font-size: 10px; color: #555; display: flex; align-items: center; gap: 6px; }
-.transport-row-s .t-icon { font-size: 11px; }
 .transport-row-s .t-time { color: #888; margin-left: auto; }
 .food-row { padding: 6px 14px 6px 28px; display: flex; align-items: center; gap: 8px; border-left: 3px solid #98FB98; cursor: pointer; transition: background 0.15s; }
 .food-row:hover { background: #111a11; }
@@ -60,7 +64,7 @@ body { font-family: 'DM Sans', sans-serif; background: #0d0d0d; color: #f0ebe0; 
 .food-row .f-price { font-family: 'DM Mono', monospace; font-size: 10px; color: #6a9b6a; }
 #map { flex: 1; }
 .marker-pin { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
-.marker-circle { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; color: #000; border: 2px solid rgba(0,0,0,0.3); box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(255,255,255,0.15); flex-direction: column; line-height: 1.1; text-align: center; }
+.marker-circle { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #000; border: 2px solid rgba(0,0,0,0.3); box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(255,255,255,0.15); flex-direction: column; line-height: 1.1; text-align: center; }
 .marker-circle .m-emoji { font-size: 12px; line-height: 1; }
 .marker-circle .m-num { font-size: 9px; font-weight: 700; }
 .marker-tail { width: 2px; height: 6px; background: rgba(0,0,0,0.4); margin-top: -1px; }
@@ -73,235 +77,257 @@ body { font-family: 'DM Sans', sans-serif; background: #0d0d0d; color: #f0ebe0; 
 .popup-desc { font-size: 12px; color: #aaa; line-height: 1.5; }
 .popup-transport { margin-top: 10px; padding-top: 10px; border-top: 1px solid #333; font-size: 11px; color: #777; font-family: 'DM Mono', monospace; }
 .popup-transport span { color: #aaa; }
-.legend-panel { position: absolute; bottom: 16px; left: 316px; z-index: 1000; background: rgba(13,13,13,0.92); border: 1px solid #333; border-radius: 6px; padding: 12px 14px; backdrop-filter: blur(8px); font-size: 11px; }
+.legend-panel { position: absolute; bottom: 16px; right: 16px; z-index: 1000; background: rgba(13,13,13,0.92); border: 1px solid #333; border-radius: 6px; padding: 12px 14px; backdrop-filter: blur(8px); font-size: 11px; }
 .legend-panel h4 { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1px; color: #666; margin-bottom: 8px; text-transform: uppercase; }
 .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 11px; color: #ccc; }
 .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
-@media (max-width: 700px) { .sidebar { width: 220px; min-width: 180px; } .legend-panel { left: 236px; } .header { flex-wrap: wrap; } .stats { display: none; } }
 </style>
 </head>
 <body>
 <div class="header">
   <h1>Lon<em>don</em></h1>
-  <div class="day-filters">
+  <button class="header-toggle" onclick="toggleHeader()">&#9650; Hide filters</button>
+  <div class="day-filters" id="dayFilters">
     <button class="day-btn active" data-day="all" onclick="filterDay('all',this)">ALL</button>
-    <button class="day-btn" data-day="1" onclick="filterDay('1',this)">DAY 1 — Far SW</button>
-    <button class="day-btn" data-day="2" onclick="filterDay('2',this)">DAY 2 — West</button>
-    <button class="day-btn" data-day="3" onclick="filterDay('3',this)">DAY 3 — Centre</button>
-    <button class="day-btn" data-day="4" onclick="filterDay('4',this)">DAY 4 — Westminster</button>
-    <button class="day-btn" data-day="5" onclick="filterDay('5',this)">DAY 5 — City</button>
-    <button class="day-btn" data-day="6" onclick="filterDay('6',this)">DAY 6 — East</button>
-    <button class="day-btn" data-day="7" onclick="filterDay('7',this)">DAY 7 — Greenwich</button>
-    <button class="day-btn" data-day="food" onclick="filterDay('food',this)">🍜 FOOD</button>
+    <button class="day-btn" data-day="1" onclick="filterDay('1',this)">DAY 1</button>
+    <button class="day-btn" data-day="2" onclick="filterDay('2',this)">DAY 2</button>
+    <button class="day-btn" data-day="3" onclick="filterDay('3',this)">DAY 3</button>
+    <button class="day-btn" data-day="4" onclick="filterDay('4',this)">DAY 4</button>
+    <button class="day-btn" data-day="5" onclick="filterDay('5',this)">DAY 5</button>
+    <button class="day-btn" data-day="6" onclick="filterDay('6',this)">DAY 6</button>
+    <button class="day-btn" data-day="7" onclick="filterDay('7',this)">DAY 7</button>
+    <button class="day-btn" data-day="food" onclick="filterDay('food',this)">&#127836; FOOD</button>
   </div>
-  <div class="stats">80 places · 20 food spots · 7 days</div>
 </div>
 <div class="main">
   <div class="sidebar" id="sidebar"></div>
+  <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">&#9664;</button>
   <div id="map"></div>
 </div>
 <div class="legend-panel">
   <h4>Legend</h4>
-  <div class="legend-item"><div class="legend-dot" style="background:#FF6B6B"></div>Day 1 — Far SW</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#4ECDC4"></div>Day 2 — West</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#FFE66D"></div>Day 3 — Centre</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#A8E6CF"></div>Day 4 — Westminster</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#C3A6FF"></div>Day 5 — City</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#FFB347"></div>Day 6 — East</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#FF85A1"></div>Day 7 — Greenwich</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#98FB98"></div>🍜 Food Spots</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#FF6B6B"></div>Day 1 - Far SW</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#4ECDC4"></div>Day 2 - West</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#FFE66D"></div>Day 3 - Centre</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#A8E6CF"></div>Day 4 - Westminster</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#C3A6FF"></div>Day 5 - City</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#FFB347"></div>Day 6 - East</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#FF85A1"></div>Day 7 - Greenwich</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#98FB98"></div>Food</div>
 </div>
 <script>
-const DAY_COLORS = {'1':'#FF6B6B','2':'#4ECDC4','3':'#FFE66D','4':'#A8E6CF','5':'#C3A6FF','6':'#FFB347','7':'#FF85A1','food':'#98FB98'};
-const DAY_LABELS = {'1':'DAY 1 — Far SW: Kew & Richmond','2':'DAY 2 — West: Chiswick · Notting Hill · Hyde Park','3':'DAY 3 — Centre: Mayfair · West End · Soho · Covent Garden','4':'DAY 4 — Westminster · Southbank · King\'s Cross','5':'DAY 5 — The City · Bloomsbury · Holborn','6':'DAY 6 — East London','7':'DAY 7 — Greenwich & Peninsula'};
-const DAY_EMOJI = {'1':'🌿','2':'🏘️','3':'🎭','4':'👑','5':'⛪','6':'🚢','7':'⚓'};
-const PLACES = [
-['p1','1','01','🌿','Isabella Plantation, Richmond Park',51.4350,-0.2780,'1–2h','55','🚇+🚌','Woodland garden, azaleas/rhododendrons. District → Richmond + Bus 371.'],
-['p2','1','02','🌳','Treetop Walkway — Kew Gardens',51.4785,-0.2956,'2–3h','15','🚶','18m canopy walkway. Entry ~£22.'],
-['p3','2','03','🏢','Chiswick Business Park',51.4932,-0.2626,'30m','35','🚇','District → Gunnersbury. Architecture & gardens.'],
-['p4','2','04','🎨','Mosaic House, Chiswick',51.4912,-0.2640,'20m','10','🚶','Victorian house covered in mosaic tiles.'],
-['p5','2','05','🌸','Notting Hill',51.5130,-0.2005,'1.5–2h','20','🚕','Portobello Road, pastel houses. Best Saturday mornings.'],
-['p6','2','06','⛵','Little Venice',51.5215,-0.1876,'45m','30','🚶','Canal basin with narrowboats.'],
-['p7','2','07','🦕','Natural History Museum',51.4967,-0.1764,'2–3h','20','🚇','Free. Blue Whale, dinosaurs, gem vault.'],
-['p8','2','A2','🏺','V&A Museum',51.4966,-0.1724,'2h','5','🚶','World\'s greatest design museum. Free.'],
-['p9','2','A3','🔬','Science Museum',51.4978,-0.1749,'1.5h','5','🚶','Free. Space, codebreaking, IMAX.'],
-['p10','2','08','🛍️','Harrods',51.4994,-0.1635,'1h','10','🚶','Egyptian Escalator, Food Hall. Knightsbridge.'],
-['p11','2','09','🏠','London\'s Smallest House',51.5074,-0.1623,'10m','12','🚶','1.2m wide Victorian house.'],
-['p12','2','10','🌳','Hyde Park',51.5074,-0.1657,'1.5h','5','🚶','Serpentine, Diana Fountain, Speaker\'s Corner. Free.'],
-['p13','3','11','🖼️','Wallace Collection',51.5157,-0.1540,'1.5h','20','🚇','Rembrandt, Rubens, Fragonard. Free.'],
-['p14','3','12','🏛️','Royal Arcade',51.5098,-0.1434,'20m','12','🚶','1879 Victorian arcade.'],
-['p15','3','13','☕','Fortnum & Mason — Afternoon Tea',51.5074,-0.1390,'1.5h','8','🚶','Book weeks ahead. ~£85pp. Est. 1707.'],
-['p16','3','14','🛍️','Oxford Street',51.5152,-0.1419,'1.5h','10','🚶','Selfridges food hall. Europe\'s busiest shopping street.'],
-['p17','3','A11','🏠','Sir John Soane\'s Museum',51.5174,-0.1187,'1h','15','🚶','Eccentric townhouse. Free.'],
-['p18','3','21','🎡','Piccadilly Circus',51.5100,-0.1340,'15m','10','🚇','LED billboards, Eros fountain.'],
-['p19','3','23','🥟','Chinatown',51.5118,-0.1307,'30m','5','🚶','Gerrard Street. Dim sum, dumplings.'],
-['p20','3','24','🎸','Soho',51.5130,-0.1340,'1.5h','5','🚶','Carnaby St, Berwick St Market, record shops.'],
-['p21','3','25','🧱','LEGO Store Leicester Square',51.5108,-0.1294,'30m','5','🚶','World\'s largest LEGO store.'],
-['p22','3','26','💡','Outernet London',51.5165,-0.1298,'20m','10','🚶','Free LED immersive art canyon.'],
-['p23','3','27','🖼️','National Gallery',51.5080,-0.1280,'2h','10','🚶','Van Gogh, da Vinci. Free. Trafalgar Square.'],
-['p24','3','28','🦁','Trafalgar Square',51.5080,-0.1281,'20m','2','🚶','Nelson\'s Column, Fourth Plinth. Free.'],
-['p25','3','29','🍺','Sherlock Holmes Pub',51.5068,-0.1240,'45m','5','🚶','Victorian pub with Holmes memorabilia.'],
-['p26','3','30','🍽️','Fitzrovia / Charlotte Street',51.5194,-0.1350,'45m','15','🚶','Restaurant row.'],
-['p27','3','31','🌀','Seven Dials',51.5128,-0.1270,'30m','10','🚶','7-way Victorian junction.'],
-['p28','3','32','🌈','Neal\'s Yard',51.5129,-0.1258,'15m','3','🚶','Tiny colourful courtyard. Hidden gem.'],
-['p29','3','33','🎪','Covent Garden',51.5117,-0.1242,'1.5h','3','🚶','Covered market, street performers.'],
-['p30','3','34','🏛️','British Museum',51.5194,-0.1269,'3h','15','🚶','Rosetta Stone, Elgin Marbles. Free.'],
-['p31','3','35','🏙️','Post Building Rooftop — Holborn',51.5178,-0.1199,'1h','8','🚶','Rooftop bar, sweeping views.'],
-['p32','4','15','👑','Buckingham Palace',51.5014,-0.1419,'45m','20','🚇','Changing of Guard 10:45am daily.'],
-['p33','4','16','🦢','St James\'s Park',51.5025,-0.1340,'40m','5','🚶','Pelicans at 2:30pm.'],
-['p34','4','17','🐴','Horse Guards Parade',51.5026,-0.1278,'20m','8','🚶','Cavalry guard change 11am.'],
-['p35','4','18','🕰️','Big Ben & Houses of Parliament',51.5001,-0.1246,'30m','12','🚶','Best from Westminster Bridge.'],
-['p36','4','19','⛪','Westminster Abbey',51.4993,-0.1273,'2h','3','🚶','Newton, Darwin buried here. ~£29.'],
-['p37','4','20','⛵','Thames Cruise — Westminster Pier',51.5007,-0.1228,'1h','5','🚶','City Cruises to Greenwich. ~£25 return.'],
-['p38','4','36','🎡','London Eye',51.5033,-0.1196,'1h','5','⛵','30-min capsule ride, 135m. ~£32.'],
-['p39','4','37','🚶','Queen\'s Walk & South Bank',51.5054,-0.1151,'1.5h','10','🚶','4km riverside promenade.'],
-['p40','4','A1','🎨','Tate Modern & Turbine Hall',51.5076,-0.0993,'2h','20','🚶','World\'s most visited modern art museum. Free.'],
-['p41','4','39','🌆','Thames Evening Cruise',51.5054,-0.1150,'1h','5','⛵','Evening cruise from Festival Pier.'],
-['p42','4','42','🧙','Platform 9¾ — King\'s Cross',51.5320,-0.1229,'25m','25','🚇','Real trolley installation. Free.'],
-['p43','4','43','🪞','Gasholder Park — King\'s Cross',51.5354,-0.1239,'20m','10','🚶','Mirror-polished Victorian gasometer.'],
-['p44','4','45','☕','Redemption Roasters — Angel',51.5337,-0.1059,'30m','15','🚇','Social enterprise specialty coffee.'],
-['p45','5','40','🌿','Lincoln\'s Inn',51.5154,-0.1147,'40m','15','🚇','14th-century legal enclave.'],
-['p46','5','A8','⛪','Temple Church — Fleet Street',51.5117,-0.1076,'30m','10','🚶','12th-century Knights Templar church.'],
-['p47','5','41','🍺','Ye Olde Mitre — Holborn',51.5180,-0.1087,'45m','5','🚶','1546 pub hidden in alley. Most secret in London.'],
-['p48','5','46','📰','Fleet Street',51.5148,-0.1063,'20m','10','🚶','Former press capital.'],
-['p49','5','47','⛪','St Paul\'s Cathedral',51.5138,-0.0984,'2h','8','🚶','528 steps, Whispering Gallery. ~£22.'],
-['p50','5','48','🌉','Millennium Bridge',51.5101,-0.0983,'10m','5','🚶','Perfect St Paul\'s view.'],
-['p51','5','49','🎭','Shakespeare\'s Globe',51.5081,-0.0975,'1.5h','3','🚶','£5 groundling tickets in summer.'],
-['p52','5','50','🌿','Barbican Conservatory',51.5202,-0.0933,'45m','20','🚇','Tropical rainforest. Free, Sundays only.'],
-['p53','5','52','🌿','Sky Garden',51.5111,-0.0831,'1h','15','🚶','Free rooftop garden, Level 35.'],
-['p54','5','53','🏙️','Horizon 22',51.5153,-0.0822,'45m','5','🚶','Europe\'s highest free public gallery, 278m.'],
-['p55','5','54','🏛️','Royal Exchange',51.5131,-0.0874,'20m','10','🚶','1565 luxury arcade. Free.'],
-['p56','5','55','🗿','The Monument',51.5103,-0.0862,'30m','5','🚶','311 steps, 1666 fire memorial. ~£6.'],
-['p57','5','56','🎬','Leadenhall Market',51.5137,-0.0837,'30m','5','🚶','1881 Victorian market. Diagon Alley.'],
-['p58','5','57','🌿','The Garden at 120',51.5113,-0.0841,'20m','5','🚶','Free rooftop garden.'],
-['p59','5','58','🌿','St Dunstan-in-the-East',51.5088,-0.0838,'20m','5','🚶','Bombed church with climbing plants.'],
-['p60','5','59','🐘','Herd of Hope — Spitalfields',51.5195,-0.0726,'20m','15','🚶','Life-size bronze elephants.'],
-['p61','5','A12','🕊️','Bunhill Fields',51.5238,-0.0879,'20m','10','🚇','William Blake, Daniel Defoe buried here.'],
-['p62','6','44','🎸','Camden Town',51.5390,-0.1426,'2h','20','🚇','Stables Market, street food, live music.'],
-['p63','6','66','⚓','Pelican Stairs — Wapping',51.5055,-0.0576,'20m','25','🚇','Ancient river steps, mudlarking.'],
-['p64','6','67','🚢','Legend of the Titanic — Canada Water',51.4943,-0.0479,'1.5h','15','🚇','Immersive Titanic museum.'],
-['p65','6','68','🏗️','Canary Wharf',51.5054,-0.0235,'1h','15','🚇','Glass towers, architecture spectacle.'],
-['p66','6','69','🌿','Crossrail Place Roof Garden',51.5047,-0.0198,'30m','5','🚶','Free tropical garden on station roof.'],
-['p67','6','70','🎠','Roof East — Stratford',51.5449,0.0051,'1.5h','20','🚇','Rooftop mini golf, cinema, food trucks.'],
-['p68','6','71','🎢','ArcelorMittal Orbit & Slide',51.5382,-0.0158,'1h','20','🚶','World\'s longest tunnel slide, 178.5m.'],
-['p69','6','72','💡','God\'s Own Junkyard — Walthamstow',51.5873,-0.0278,'1h','35','🚇','Neon wonderland warehouse. Fri–Sun.'],
-['p70','6','A4','🌸','Columbia Road Flower Market',51.5296,-0.0716,'1h','20','🚇','Sunday 8am–3pm. Riot of colour.'],
-['p71','6','A7','🏠','Museum of the Home — Hackney',51.5279,-0.0720,'1h','5','🚶','English living rooms 1600–today. Free.'],
-['p72','6','A9','🕯️','Dennis Severs\' House — Spitalfields',51.5203,-0.0730,'1h','15','🚇','1700s house frozen in time. ~£20.'],
-['p73','7','73','🏛️','Old Royal Naval College / Painted Hall',51.4825,-0.0061,'1.5h','55','⛵','Sistine Chapel of UK. Free.'],
-['p74','7','74','🏛️','Queen\'s House — Greenwich',51.4826,-0.0048,'45m','5','🚶','Palladian villa with art. Free.'],
-['p75','7','75','🔭','Greenwich Observatory',51.4779,0.0015,'1.5h','15','🚶','Prime Meridian. ~£16.'],
-['p76','7','76','🍰','Haute Dolci — The O2',51.5030,0.0037,'1h','20','🚇','Spectacular dessert restaurant.'],
-['p77','7','77','🚡','Emirates Air Line — Cable Car',51.5012,0.0112,'30m','5','🚇','London\'s only cable car. ~£6.'],
-['p78','7','A6','🏰','Ham House — Richmond',51.4438,-0.3222,'2h','20','🚇+🚌','1610 National Trust mansion.'],
-['p79','7','A10','🌶️','Brixton Market & Electric Avenue',51.4615,-0.1143,'1.5h','20','🚇','Afro-Caribbean market, jerk chicken.'],
-['p80','6','A5','🌺','Portobello Road Saturday Market',51.5165,-0.2022,'1.5h','15','🚇','Full antiques market on Saturdays.'],
+const DAY_COLORS={'1':'#FF6B6B','2':'#4ECDC4','3':'#FFE66D','4':'#A8E6CF','5':'#C3A6FF','6':'#FFB347','7':'#FF85A1','food':'#98FB98'};
+const DAY_LABELS={'1':'DAY 1 - Far SW: Kew & Richmond','2':'DAY 2 - West: Chiswick - Notting Hill - Hyde Park','3':'DAY 3 - Centre: Mayfair - West End - Soho - Covent Garden','4':'DAY 4 - Westminster - Southbank - Kings Cross','5':'DAY 5 - The City - Bloomsbury - Holborn','6':'DAY 6 - East London','7':'DAY 7 - Greenwich & Peninsula'};
+const DAY_EMOJI={'1':'🌿','2':'🏘️','3':'🎭','4':'👑','5':'⛪','6':'🚢','7':'⚓'};
+const PLACES=[
+['p1','1','01','🌿','Isabella Plantation Richmond Park',51.4350,-0.2780,'1-2h','55','Tube+Bus','Woodland garden. District to Richmond plus Bus 371.'],
+['p2','1','02','🌳','Treetop Walkway Kew Gardens',51.4785,-0.2956,'2-3h','15','Walk','18m canopy walkway. Entry approx 22.'],
+['p3','2','03','🏢','Chiswick Business Park',51.4932,-0.2626,'30m','35','Tube','District to Gunnersbury. Architecture and gardens.'],
+['p4','2','04','🎨','Mosaic House Chiswick',51.4912,-0.2640,'20m','10','Walk','Victorian house covered in mosaic tiles.'],
+['p5','2','05','🌸','Notting Hill',51.5130,-0.2005,'1.5-2h','20','Taxi','Portobello Road, pastel houses. Best Saturday mornings.'],
+['p6','2','06','⛵','Little Venice',51.5215,-0.1876,'45m','30','Walk','Canal basin with narrowboats.'],
+['p7','2','07','🦕','Natural History Museum',51.4967,-0.1764,'2-3h','20','Tube','Free. Blue Whale, dinosaurs, gem vault.'],
+['p8','2','A2','🏺','V and A Museum',51.4966,-0.1724,'2h','5','Walk','Worlds greatest design museum. Free.'],
+['p9','2','A3','🔬','Science Museum',51.4978,-0.1749,'1.5h','5','Walk','Free. Space, codebreaking, IMAX.'],
+['p10','2','08','🛍️','Harrods',51.4994,-0.1635,'1h','10','Walk','Egyptian Escalator, Food Hall. Knightsbridge.'],
+['p11','2','09','🏠','Londons Smallest House',51.5074,-0.1623,'10m','12','Walk','1.2m wide Victorian house.'],
+['p12','2','10','🌳','Hyde Park',51.5074,-0.1657,'1.5h','5','Walk','Serpentine, Diana Fountain, Speakers Corner. Free.'],
+['p13','3','11','🖼️','Wallace Collection',51.5157,-0.1540,'1.5h','20','Tube','Rembrandt, Rubens, Fragonard. Free.'],
+['p14','3','12','🏛️','Royal Arcade',51.5098,-0.1434,'20m','12','Walk','1879 Victorian arcade.'],
+['p15','3','13','☕','Fortnum and Mason Afternoon Tea',51.5074,-0.1390,'1.5h','8','Walk','Book weeks ahead. Est. 1707.'],
+['p16','3','14','🛍️','Oxford Street',51.5152,-0.1419,'1.5h','10','Walk','Selfridges food hall. Europes busiest shopping street.'],
+['p17','3','A11','🏠','Sir John Soanes Museum',51.5174,-0.1187,'1h','15','Walk','Eccentric townhouse. Free.'],
+['p18','3','21','🎡','Piccadilly Circus',51.5100,-0.1340,'15m','10','Tube','LED billboards, Eros fountain.'],
+['p19','3','23','🥟','Chinatown',51.5118,-0.1307,'30m','5','Walk','Gerrard Street. Dim sum, dumplings.'],
+['p20','3','24','🎸','Soho',51.5130,-0.1340,'1.5h','5','Walk','Carnaby St, Berwick St Market, record shops.'],
+['p21','3','25','🧱','LEGO Store Leicester Square',51.5108,-0.1294,'30m','5','Walk','Worlds largest LEGO store.'],
+['p22','3','26','💡','Outernet London',51.5165,-0.1298,'20m','10','Walk','Free LED immersive art canyon.'],
+['p23','3','27','🖼️','National Gallery',51.5080,-0.1280,'2h','10','Walk','Van Gogh, da Vinci. Free. Trafalgar Square.'],
+['p24','3','28','🦁','Trafalgar Square',51.5080,-0.1281,'20m','2','Walk','Nelsons Column, Fourth Plinth. Free.'],
+['p25','3','29','🍺','Sherlock Holmes Pub',51.5068,-0.1240,'45m','5','Walk','Victorian pub with Holmes memorabilia.'],
+['p26','3','30','🍽️','Fitzrovia Charlotte Street',51.5194,-0.1350,'45m','15','Walk','Restaurant row.'],
+['p27','3','31','🌀','Seven Dials',51.5128,-0.1270,'30m','10','Walk','7-way Victorian junction.'],
+['p28','3','32','🌈','Neals Yard',51.5129,-0.1258,'15m','3','Walk','Tiny colourful courtyard. Hidden gem.'],
+['p29','3','33','🎪','Covent Garden',51.5117,-0.1242,'1.5h','3','Walk','Covered market, street performers.'],
+['p30','3','34','🏛️','British Museum',51.5194,-0.1269,'3h','15','Walk','Rosetta Stone, Elgin Marbles. Free.'],
+['p31','3','35','🏙️','Post Building Rooftop Holborn',51.5178,-0.1199,'1h','8','Walk','Rooftop bar, sweeping views.'],
+['p32','4','15','👑','Buckingham Palace',51.5014,-0.1419,'45m','20','Tube','Changing of Guard 10:45am daily.'],
+['p33','4','16','🦢','St James Park',51.5025,-0.1340,'40m','5','Walk','Pelicans at 2:30pm.'],
+['p34','4','17','🐴','Horse Guards Parade',51.5026,-0.1278,'20m','8','Walk','Cavalry guard change 11am.'],
+['p35','4','18','🕰️','Big Ben and Houses of Parliament',51.5001,-0.1246,'30m','12','Walk','Best from Westminster Bridge.'],
+['p36','4','19','⛪','Westminster Abbey',51.4993,-0.1273,'2h','3','Walk','Newton, Darwin buried here.'],
+['p37','4','20','⛵','Thames Cruise Westminster Pier',51.5007,-0.1228,'1h','5','Walk','City Cruises to Greenwich.'],
+['p38','4','36','🎡','London Eye',51.5033,-0.1196,'1h','5','Boat','30-min capsule ride, 135m.'],
+['p39','4','37','🚶','Queens Walk and South Bank',51.5054,-0.1151,'1.5h','10','Walk','4km riverside promenade.'],
+['p40','4','A1','🎨','Tate Modern and Turbine Hall',51.5076,-0.0993,'2h','20','Walk','Worlds most visited modern art museum. Free.'],
+['p41','4','39','🌆','Thames Evening Cruise',51.5054,-0.1150,'1h','5','Boat','Evening cruise from Festival Pier.'],
+['p42','4','42','🧙','Platform 9 3/4 Kings Cross',51.5320,-0.1229,'25m','25','Tube','Real trolley installation. Free.'],
+['p43','4','43','🪞','Gasholder Park Kings Cross',51.5354,-0.1239,'20m','10','Walk','Mirror-polished Victorian gasometer.'],
+['p44','4','45','☕','Redemption Roasters Angel',51.5337,-0.1059,'30m','15','Tube','Social enterprise specialty coffee.'],
+['p45','5','40','🌿','Lincolns Inn',51.5154,-0.1147,'40m','15','Tube','14th-century legal enclave.'],
+['p46','5','A8','⛪','Temple Church Fleet Street',51.5117,-0.1076,'30m','10','Walk','12th-century Knights Templar church.'],
+['p47','5','41','🍺','Ye Olde Mitre Holborn',51.5180,-0.1087,'45m','5','Walk','1546 pub hidden in alley. Most secret in London.'],
+['p48','5','46','📰','Fleet Street',51.5148,-0.1063,'20m','10','Walk','Former press capital.'],
+['p49','5','47','⛪','St Pauls Cathedral',51.5138,-0.0984,'2h','8','Walk','528 steps, Whispering Gallery.'],
+['p50','5','48','🌉','Millennium Bridge',51.5101,-0.0983,'10m','5','Walk','Perfect St Pauls view.'],
+['p51','5','49','🎭','Shakespeares Globe',51.5081,-0.0975,'1.5h','3','Walk','5 groundling tickets in summer.'],
+['p52','5','50','🌿','Barbican Conservatory',51.5202,-0.0933,'45m','20','Tube','Tropical rainforest. Free, Sundays only.'],
+['p53','5','52','🌿','Sky Garden',51.5111,-0.0831,'1h','15','Walk','Free rooftop garden, Level 35.'],
+['p54','5','53','🏙️','Horizon 22',51.5153,-0.0822,'45m','5','Walk','Europes highest free public gallery, 278m.'],
+['p55','5','54','🏛️','Royal Exchange',51.5131,-0.0874,'20m','10','Walk','1565 luxury arcade. Free.'],
+['p56','5','55','🗿','The Monument',51.5103,-0.0862,'30m','5','Walk','311 steps, 1666 fire memorial.'],
+['p57','5','56','🎬','Leadenhall Market',51.5137,-0.0837,'30m','5','Walk','1881 Victorian market. Diagon Alley.'],
+['p58','5','57','🌿','The Garden at 120',51.5113,-0.0841,'20m','5','Walk','Free rooftop garden.'],
+['p59','5','58','🌿','St Dunstan-in-the-East',51.5088,-0.0838,'20m','5','Walk','Bombed church with climbing plants.'],
+['p60','5','59','🐘','Herd of Hope Spitalfields',51.5195,-0.0726,'20m','15','Walk','Life-size bronze elephants.'],
+['p61','5','A12','🕊️','Bunhill Fields',51.5238,-0.0879,'20m','10','Tube','William Blake, Daniel Defoe buried here. Free.'],
+['p62','6','44','🎸','Camden Town',51.5390,-0.1426,'2h','20','Tube','Stables Market, street food, live music.'],
+['p63','6','66','⚓','Pelican Stairs Wapping',51.5055,-0.0576,'20m','25','Tube','Ancient river steps, mudlarking.'],
+['p64','6','67','🚢','Legend of the Titanic Canada Water',51.4943,-0.0479,'1.5h','15','Tube','Immersive Titanic museum.'],
+['p65','6','68','🏗️','Canary Wharf',51.5054,-0.0235,'1h','15','Tube','Glass towers, architecture spectacle.'],
+['p66','6','69','🌿','Crossrail Place Roof Garden',51.5047,-0.0198,'30m','5','Walk','Free tropical garden on station roof.'],
+['p67','6','70','🎠','Roof East Stratford',51.5449,0.0051,'1.5h','20','Tube','Rooftop mini golf, cinema, food trucks.'],
+['p68','6','71','🎢','ArcelorMittal Orbit and Slide',51.5382,-0.0158,'1h','20','Walk','Worlds longest tunnel slide, 178.5m.'],
+['p69','6','72','💡','Gods Own Junkyard Walthamstow',51.5873,-0.0278,'1h','35','Tube','Neon wonderland warehouse. Fri-Sun.'],
+['p70','6','A4','🌸','Columbia Road Flower Market',51.5296,-0.0716,'1h','20','Tube','Sunday 8am-3pm. Riot of colour.'],
+['p71','6','A7','🏠','Museum of the Home Hackney',51.5279,-0.0720,'1h','5','Walk','English living rooms 1600-today. Free.'],
+['p72','6','A9','🕯️','Dennis Severs House Spitalfields',51.5203,-0.0730,'1h','15','Tube','1700s house frozen in time.'],
+['p73','7','73','🏛️','Old Royal Naval College Painted Hall',51.4825,-0.0061,'1.5h','55','Boat','Sistine Chapel of UK. Free.'],
+['p74','7','74','🏛️','Queens House Greenwich',51.4826,-0.0048,'45m','5','Walk','Palladian villa with art. Free.'],
+['p75','7','75','🔭','Greenwich Observatory',51.4779,0.0015,'1.5h','15','Walk','Prime Meridian.'],
+['p76','7','76','🍰','Haute Dolci The O2',51.5030,0.0037,'1h','20','Tube','Spectacular dessert restaurant.'],
+['p77','7','77','🚡','Emirates Air Line Cable Car',51.5012,0.0112,'30m','5','Tube','Londons only cable car.'],
+['p78','7','A6','🏰','Ham House Richmond',51.4438,-0.3222,'2h','20','Tube','1610 National Trust mansion.'],
+['p79','7','A10','🌶️','Brixton Market and Electric Avenue',51.4615,-0.1143,'1.5h','20','Tube','Afro-Caribbean market, jerk chicken.'],
+['p80','6','A5','🌺','Portobello Road Saturday Market',51.5165,-0.2022,'1.5h','15','Tube','Full antiques market on Saturdays.'],
 ];
-const FOOD = [
-['f1','🌯 Wrap It Up! — Oxford Street',51.5152,-0.1419,'Huge wraps from £5.','£4–6','Oxford Street'],
-['f2','🥙 Kati Roll Company — Soho',51.5128,-0.1340,'Indian street food rolls ~£6.','£5–7','Soho'],
-['f3','🍜 Bao — Soho',51.5120,-0.1300,'Taiwanese steamed buns ~£6 each.','£8–12','Soho'],
-['f4','🥐 Paul Bakery — Covent Garden',51.5115,-0.1238,'French sandwiches & pastries from £4.','£3–6','Covent Garden'],
-['f5','🌮 Wahaca — Southbank',51.5062,-0.1145,'Mexican street food. Tacos from £4.','£8–14','Southbank'],
-['f6','🫕 Dishoom Breakfast — Kings Cross',51.5325,-0.1240,'Legendary bacon naan roll £8.','£8–12','Kings Cross'],
-['f7','🥪 Pret a Manger — Everywhere',51.5080,-0.1280,'Sandwiches £4–6.','£3–6','All zones'],
-['f8','🧆 Pilpel — Spitalfields',51.5193,-0.0742,'Best falafel in London. Wrap £6.','£5–7','Spitalfields'],
-['f9','🐟 The Golden Hind — Marylebone',51.5190,-0.1520,'Fish & chips since 1914. ~£10.','£8–12','Marylebone'],
-['f10','🫔 Monmouth Coffee — Borough Mkt',51.5055,-0.0905,'Excellent coffee from £3.50.','£3–5','Borough Market'],
-['f11','🧀 Neals Yard Dairy — Borough',51.5051,-0.0910,'Artisan bread & cheese. ~£5.','£5–8','Borough Market'],
-['f12','🍕 Pizza Pilgrims — Carnaby St',51.5135,-0.1390,'Neapolitan pizza from £10.','£10–14','Soho'],
-['f13','🥗 Leon — Multiple Locations',51.5073,-0.1278,'Healthy fast food, wraps from £5.','£5–8','All zones'],
-['f14','🫙 Padella — Borough Market',51.5051,-0.0919,'Handmade pasta from £8.','£8–13','Borough Market'],
-['f15','🍣 Yo Sushi — Canary Wharf',51.5047,-0.0198,'Conveyor belt sushi. Plates from £4.','£10–18','Canary Wharf'],
-['f16','🌭 Spitalfields Market Stalls',51.5195,-0.0726,'International street food £5–8.','£5–8','Spitalfields'],
-['f17','🍔 Byron Burger — Covent Garden',51.5115,-0.1242,'Quality burgers from £10.','£10–14','Covent Garden'],
-['f18','🥘 Tayyabs — Whitechapel',51.5136,-0.0620,'Best Pakistani food in London. ~£12.','£10–15','Whitechapel'],
-['f19','🫖 Pavilion Cafe — Victoria Park',51.5366,-0.0342,'Breakfast/lunch ~£8.','£6–10','East London'],
-['f20','🍦 Crosstown Doughnuts — Various',51.5130,-0.1360,'Artisan doughnuts ~£4 each.','£4','All zones'],
+const FOOD=[
+['f1','🌯 Wrap It Up Oxford Street',51.5152,-0.1419,'Huge wraps from 5.','4-6','Oxford Street'],
+['f2','🥙 Kati Roll Company Soho',51.5128,-0.1340,'Indian street food rolls.','5-7','Soho'],
+['f3','🍜 Bao Soho',51.5120,-0.1300,'Taiwanese steamed buns.','8-12','Soho'],
+['f4','🥐 Paul Bakery Covent Garden',51.5115,-0.1238,'French sandwiches and pastries from 4.','3-6','Covent Garden'],
+['f5','🌮 Wahaca Southbank',51.5062,-0.1145,'Mexican street food. Tacos from 4.','8-14','Southbank'],
+['f6','🫕 Dishoom Kings Cross',51.5325,-0.1240,'Legendary bacon naan roll.','8-12','Kings Cross'],
+['f7','🥪 Pret a Manger',51.5080,-0.1280,'Sandwiches 4-6.','3-6','All zones'],
+['f8','🧆 Pilpel Spitalfields',51.5193,-0.0742,'Best falafel in London.','5-7','Spitalfields'],
+['f9','🐟 The Golden Hind Marylebone',51.5190,-0.1520,'Fish and chips since 1914.','8-12','Marylebone'],
+['f10','🫔 Monmouth Coffee Borough',51.5055,-0.0905,'Excellent coffee from 3.50.','3-5','Borough Market'],
+['f11','🧀 Neals Yard Dairy Borough',51.5051,-0.0910,'Artisan bread and cheese.','5-8','Borough Market'],
+['f12','🍕 Pizza Pilgrims Carnaby St',51.5135,-0.1390,'Neapolitan pizza from 10.','10-14','Soho'],
+['f13','🥗 Leon Multiple Locations',51.5073,-0.1278,'Healthy fast food, wraps from 5.','5-8','All zones'],
+['f14','🫙 Padella Borough Market',51.5051,-0.0919,'Handmade pasta from 8.','8-13','Borough Market'],
+['f15','🍣 Yo Sushi Canary Wharf',51.5047,-0.0198,'Conveyor belt sushi.','10-18','Canary Wharf'],
+['f16','🌭 Spitalfields Market Stalls',51.5195,-0.0726,'International street food.','5-8','Spitalfields'],
+['f17','🍔 Byron Burger Covent Garden',51.5115,-0.1242,'Quality burgers from 10.','10-14','Covent Garden'],
+['f18','🥘 Tayyabs Whitechapel',51.5136,-0.0620,'Best Pakistani food in London.','10-15','Whitechapel'],
+['f19','🫖 Pavilion Cafe Victoria Park',51.5366,-0.0342,'Breakfast and lunch around 8.','6-10','East London'],
+['f20','🍦 Crosstown Doughnuts',51.5130,-0.1360,'Artisan doughnuts around 4 each.','4','All zones'],
 ];
-const map = L.map('map',{center:[51.5074,-0.1278],zoom:13,zoomControl:true});
+const map=L.map('map',{center:[51.5074,-0.1278],zoom:13,zoomControl:true});
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO',maxZoom:19}).addTo(map);
 function makeIcon(color,num,emoji){
-  const html=`<div class="marker-pin"><div class="marker-circle" style="background:${color};border-color:${color}cc;"><span class="m-emoji">${emoji}</span><span class="m-num">${num}</span></div><div class="marker-tail" style="background:${color}88"></div></div>`;
-  return L.divIcon({html,className:'',iconSize:[34,42],iconAnchor:[17,42],popupAnchor:[0,-44]});
+  const html='<div class="marker-pin"><div class="marker-circle" style="background:'+color+';border-color:'+color+'cc;"><span class="m-emoji">'+emoji+'</span><span class="m-num">'+num+'</span></div><div class="marker-tail" style="background:'+color+'88"></div></div>';
+  return L.divIcon({html:html,className:'',iconSize:[34,42],iconAnchor:[17,42],popupAnchor:[0,-44]});
 }
 function makeFoodIcon(){
-  return L.divIcon({html:'<div class="food-marker">🍜</div>',className:'',iconSize:[26,26],iconAnchor:[13,13],popupAnchor:[0,-15]});
+  return L.divIcon({html:'<div class="food-marker">&#127836;</div>',className:'',iconSize:[26,26],iconAnchor:[13,13],popupAnchor:[0,-15]});
 }
-let allMarkers={},allPolylines={},foodMarkers=[];
-const byDay={};
-PLACES.forEach(p=>{if(!byDay[p[1]])byDay[p[1]]=[];byDay[p[1]].push(p);});
-const sidebar=document.getElementById('sidebar');
-['1','2','3','4','5','6','7'].forEach(day=>{
-  const group=byDay[day]||[];
-  const grpDiv=document.createElement('div');
+var allMarkers={},allPolylines={},foodMarkers=[];
+var byDay={};
+PLACES.forEach(function(p){if(!byDay[p[1]])byDay[p[1]]=[];byDay[p[1]].push(p);});
+var sidebar=document.getElementById('sidebar');
+['1','2','3','4','5','6','7'].forEach(function(day){
+  var group=byDay[day]||[];
+  var grpDiv=document.createElement('div');
   grpDiv.className='day-group';grpDiv.dataset.day=day;
-  const hdr=document.createElement('div');
+  var hdr=document.createElement('div');
   hdr.className='day-header';
   hdr.style.background=DAY_COLORS[day]+'22';
-  hdr.innerHTML=`<div class="day-dot" style="background:${DAY_COLORS[day]}"></div>${DAY_EMOJI[day]} ${DAY_LABELS[day]}<span class="day-count">${group.length} stops</span>`;
+  hdr.innerHTML='<div class="day-dot" style="background:'+DAY_COLORS[day]+'"></div>'+DAY_EMOJI[day]+' '+DAY_LABELS[day]+'<span class="day-count">'+group.length+' stops</span>';
   grpDiv.appendChild(hdr);
-  group.forEach((p,idx)=>{
-    const [id,pday,num,emoji,name,lat,lng,stay,transMin,transMode,desc]=p;
-    const color=DAY_COLORS[pday];
+  group.forEach(function(p,idx){
+    var id=p[0],pday=p[1],num=p[2],emoji=p[3],name=p[4],lat=p[5],lng=p[6],stay=p[7],transMin=p[8],transMode=p[9],desc=p[10];
+    var color=DAY_COLORS[pday];
     if(idx>0&&transMin){
-      const tr=document.createElement('div');
-      tr.className='transport-row-s';tr.dataset.day=day;
-      tr.innerHTML=`<span class="t-icon">${transMode}</span><span style="color:#555">${transMode==='🚶'?'Walk':transMode==='🚇'?'Tube':transMode==='🚌'?'Bus':transMode==='⛵'?'Boat':transMode==='🚕'?'Taxi':'Mix'}</span><span class="t-time">${transMin} min</span>`;
+      var tr=document.createElement('div');
+      tr.className='transport-row-s';
+      tr.innerHTML='<span>'+transMode+'</span><span style="color:#555">'+transMode+'</span><span class="t-time">'+transMin+' min</span>';
       grpDiv.appendChild(tr);
     }
-    const row=document.createElement('div');
+    var row=document.createElement('div');
     row.className='place-row';row.dataset.id=id;row.style.borderLeftColor=color;
-    row.innerHTML=`<span class="num">${num}</span><span class="emoji">${emoji}</span><span class="name">${name}</span><span class="stay">${stay}</span>`;
-    row.onclick=()=>{const mk=allMarkers[id];if(mk){map.setView([lat,lng],16);mk.marker.openPopup();}};
+    row.innerHTML='<span class="num">'+num+'</span><span class="emoji">'+emoji+'</span><span class="name">'+name+'</span><span class="stay">'+stay+'</span>';
+    row.onclick=function(){var mk=allMarkers[id];if(mk){map.setView([lat,lng],16);mk.marker.openPopup();}};
     grpDiv.appendChild(row);
-    const marker=L.marker([lat,lng],{icon:makeIcon(color,num,emoji)}).addTo(map).bindPopup(`<div class="popup-title">${emoji} ${name}</div><div class="popup-meta" style="color:${color}">${DAY_EMOJI[day]} Day ${day} · Stay: ${stay}</div><div class="popup-desc">${desc}</div>${transMin?`<div class="popup-transport">${transMode} <span>${transMin} min from previous</span></div>`:''}`,{maxWidth:260});
-    allMarkers[id]={marker,day:pday,lat,lng};
+    var marker=L.marker([lat,lng],{icon:makeIcon(color,num,emoji)}).addTo(map).bindPopup(
+      '<div class="popup-title">'+emoji+' '+name+'</div><div class="popup-meta" style="color:'+color+'">'+DAY_EMOJI[day]+' Day '+day+' - Stay: '+stay+'</div><div class="popup-desc">'+desc+'</div>'+(transMin?'<div class="popup-transport">'+transMode+' <span>'+transMin+' min from previous</span></div>':''),
+      {maxWidth:260}
+    );
+    allMarkers[id]={marker:marker,day:pday,lat:lat,lng:lng};
   });
   sidebar.appendChild(grpDiv);
-  const coords=group.map(p=>[p[5],p[6]]);
+  var coords=group.map(function(p){return[p[5],p[6]];});
   if(coords.length>1){
-    const poly=L.polyline(coords,{color:DAY_COLORS[day],weight:2.5,opacity:0.55,dashArray:'6,8'}).addTo(map);
-    allPolylines[day]=poly;
+    allPolylines[day]=L.polyline(coords,{color:DAY_COLORS[day],weight:2.5,opacity:0.55,dashArray:'6,8'}).addTo(map);
   }
 });
-const foodGrp=document.createElement('div');
+var foodGrp=document.createElement('div');
 foodGrp.className='day-group';foodGrp.dataset.day='food';
-foodGrp.innerHTML=`<div class="day-header" style="background:#98FB9822;color:#98FB98"><div class="day-dot" style="background:#98FB98"></div>🍜 Budget Food Spots<span class="day-count">${FOOD.length} spots</span></div>`;
-FOOD.forEach(f=>{
-  const [id,name,lat,lng,desc,price,near]=f;
-  const row=document.createElement('div');
-  row.className='food-row';row.dataset.day='food';
-  const emoji=name.split(' ')[0];
-  row.innerHTML=`<span class="f-emoji">${emoji}</span><span class="f-name">${name.replace(/^[^\s]+\s/,'')}</span><span class="f-price">${price}</span>`;
-  row.onclick=()=>{map.setView([lat,lng],16);};
+foodGrp.innerHTML='<div class="day-header" style="background:#98FB9822;color:#98FB98"><div class="day-dot" style="background:#98FB98"></div>&#127836; Budget Food Spots<span class="day-count">'+FOOD.length+' spots</span></div>';
+FOOD.forEach(function(f){
+  var id=f[0],name=f[1],lat=f[2],lng=f[3],desc=f[4],price=f[5],near=f[6];
+  var row=document.createElement('div');
+  row.className='food-row';
+  var emoji=name.split(' ')[0];
+  row.innerHTML='<span class="f-emoji">'+emoji+'</span><span class="f-name">'+name.replace(/^[^\s]+\s/,'')+'</span><span class="f-price">'+price+'</span>';
+  row.onclick=function(){map.setView([lat,lng],16);};
   foodGrp.appendChild(row);
-  const mk=L.marker([lat,lng],{icon:makeFoodIcon()}).addTo(map).bindPopup(`<div class="popup-title">${name}</div><div class="popup-meta" style="color:#98FB98">🍜 ${price} · Near: ${near}</div><div class="popup-desc">${desc}</div>`,{maxWidth:240});
+  var mk=L.marker([lat,lng],{icon:makeFoodIcon()}).addTo(map).bindPopup(
+    '<div class="popup-title">'+name+'</div><div class="popup-meta" style="color:#98FB98">Near: '+near+'</div><div class="popup-desc">'+desc+'</div>',
+    {maxWidth:240}
+  );
   foodMarkers.push(mk);
 });
 sidebar.appendChild(foodGrp);
+var sidebarOpen=true;
+var headerOpen=true;
+function toggleSidebar(){
+  sidebarOpen=!sidebarOpen;
+  var sb=document.getElementById('sidebar');
+  var btn=document.getElementById('sidebarToggle');
+  if(sidebarOpen){sb.classList.remove('collapsed');btn.classList.remove('collapsed');btn.textContent='&#9664;';}
+  else{sb.classList.add('collapsed');btn.classList.add('collapsed');btn.textContent='&#9654;';}
+  setTimeout(function(){map.invalidateSize();},320);
+}
+function toggleHeader(){
+  headerOpen=!headerOpen;
+  var filters=document.getElementById('dayFilters');
+  var btn=document.querySelector('.header-toggle');
+  if(headerOpen){filters.classList.remove('hidden');btn.textContent='&#9650; Hide filters';}
+  else{filters.classList.add('hidden');btn.textContent='&#9660; Show filters';}
+}
 function filterDay(day,btn){
-  document.querySelectorAll('.day-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.day-btn').forEach(function(b){b.classList.remove('active');});
   btn.classList.add('active');
-  Object.values(allMarkers).forEach(({marker,day:mDay})=>{
-    if(day==='all'||mDay===day){if(!map.hasLayer(marker))map.addLayer(marker);}
-    else{if(map.hasLayer(marker))map.removeLayer(marker);}
+  Object.values(allMarkers).forEach(function(o){
+    if(day==='all'||o.day===day){if(!map.hasLayer(o.marker))map.addLayer(o.marker);}
+    else{if(map.hasLayer(o.marker))map.removeLayer(o.marker);}
   });
-  Object.entries(allPolylines).forEach(([pDay,poly])=>{
-    if(day==='all'||pDay===day){if(!map.hasLayer(poly))map.addLayer(poly);}
-    else{if(map.hasLayer(poly))map.removeLayer(poly);}
+  Object.entries(allPolylines).forEach(function(e){
+    if(day==='all'||e[0]===day){if(!map.hasLayer(e[1]))map.addLayer(e[1]);}
+    else{if(map.hasLayer(e[1]))map.removeLayer(e[1]);}
   });
-  foodMarkers.forEach(mk=>{
+  foodMarkers.forEach(function(mk){
     if(day==='all'||day==='food'){if(!map.hasLayer(mk))map.addLayer(mk);}
     else{if(map.hasLayer(mk))map.removeLayer(mk);}
   });
-  document.querySelectorAll('.day-group').forEach(g=>{
+  document.querySelectorAll('.day-group').forEach(function(g){
     g.style.display=(day==='all'||g.dataset.day===day)?'block':'none';
   });
   if(day!=='all'){
-    const points=[];
-    if(day==='food'){FOOD.forEach(f=>points.push([f[2],f[3]]));}
-    else{PLACES.filter(p=>p[1]===day).forEach(p=>points.push([p[5],p[6]]));}
+    var points=[];
+    if(day==='food'){FOOD.forEach(function(f){points.push([f[2],f[3]]);});}
+    else{PLACES.filter(function(p){return p[1]===day;}).forEach(function(p){points.push([p[5],p[6]]);});}
     if(points.length)map.fitBounds(points,{padding:[60,60]});
   } else {
     map.setView([51.5074,-0.1278],12);
