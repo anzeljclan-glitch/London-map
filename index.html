@@ -3,108 +3,102 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>London — Interactive Day Map</title>
+<title>London Map</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'DM Sans', sans-serif; background: #0d0d0d; color: #f0ebe0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-.header { background: #0d0d0d; padding: 10px 20px; display: flex; align-items: center; gap: 20px; border-bottom: 1px solid #222; flex-shrink: 0; z-index: 1000; flex-wrap: wrap; }
-.header h1 { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 900; color: #f0ebe0; letter-spacing: -0.5px; }
-.header h1 em { color: #c9973a; font-style: italic; }
-.header-toggle { background: #1a1a1a; border: 1px solid #333; color: #aaa; border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer; margin-left: auto; transition: all 0.2s; white-space: nowrap; }
-.header-toggle:hover { background: #222; color: #fff; }
-.day-filters { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; padding-bottom: 4px; }
-.day-filters.hidden { display: none; }
-.day-btn { padding: 5px 14px; border-radius: 20px; border: 2px solid; font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.2s; background: transparent; letter-spacing: 0.5px; }
+.float-btn { position: fixed; z-index: 2000; background: rgba(17,17,17,0.95); border: 1px solid #333; border-radius: 8px; color: #aaa; cursor: pointer; font-size: 11px; font-family: 'DM Mono', monospace; padding: 6px 10px; backdrop-filter: blur(8px); transition: background 0.2s, color 0.2s; white-space: nowrap; }
+.float-btn:hover { background: #222; color: #fff; }
+#btnFilters { top: 12px; right: 12px; }
+#btnSidebar { bottom: 12px; left: 12px; }
+#btnLegend  { bottom: 12px; right: 12px; }
+#filterPanel { position: fixed; top: 44px; right: 12px; z-index: 1999; background: rgba(13,13,13,0.96); border: 1px solid #333; border-radius: 8px; padding: 10px 12px; backdrop-filter: blur(10px); display: flex; flex-direction: column; gap: 6px; transition: opacity 0.2s, transform 0.2s; }
+#filterPanel.hidden { opacity: 0; pointer-events: none; transform: translateY(-6px); }
+#filterPanel h4 { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 1px; color: #555; text-transform: uppercase; margin-bottom: 2px; }
+.filter-row { display: flex; gap: 6px; flex-wrap: wrap; max-width: 320px; }
+.day-btn { padding: 4px 12px; border-radius: 20px; border: 2px solid; font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; cursor: pointer; transition: all 0.2s; background: transparent; letter-spacing: 0.5px; }
 .day-btn.active { color: #0d0d0d !important; }
-.day-btn[data-day="all"] { border-color: #888; color: #888; }
-.day-btn[data-day="all"].active { background: #888; }
-.day-btn[data-day="1"] { border-color: #FF6B6B; color: #FF6B6B; }
-.day-btn[data-day="1"].active { background: #FF6B6B; }
-.day-btn[data-day="2"] { border-color: #4ECDC4; color: #4ECDC4; }
-.day-btn[data-day="2"].active { background: #4ECDC4; }
-.day-btn[data-day="3"] { border-color: #FFE66D; color: #FFE66D; }
-.day-btn[data-day="3"].active { background: #FFE66D; }
-.day-btn[data-day="4"] { border-color: #A8E6CF; color: #A8E6CF; }
-.day-btn[data-day="4"].active { background: #A8E6CF; }
-.day-btn[data-day="5"] { border-color: #C3A6FF; color: #C3A6FF; }
-.day-btn[data-day="5"].active { background: #C3A6FF; }
-.day-btn[data-day="6"] { border-color: #FFB347; color: #FFB347; }
-.day-btn[data-day="6"].active { background: #FFB347; }
-.day-btn[data-day="7"] { border-color: #FF85A1; color: #FF85A1; }
-.day-btn[data-day="7"].active { background: #FF85A1; }
-.day-btn[data-day="food"] { border-color: #98FB98; color: #98FB98; }
-.day-btn[data-day="food"].active { background: #98FB98; }
-.main { display: flex; flex: 1; overflow: hidden; position: relative; }
+.day-btn[data-day="all"]  { border-color:#888;color:#888; } .day-btn[data-day="all"].active  { background:#888; }
+.day-btn[data-day="1"]    { border-color:#FF6B6B;color:#FF6B6B; } .day-btn[data-day="1"].active    { background:#FF6B6B; }
+.day-btn[data-day="2"]    { border-color:#4ECDC4;color:#4ECDC4; } .day-btn[data-day="2"].active    { background:#4ECDC4; }
+.day-btn[data-day="3"]    { border-color:#FFE66D;color:#FFE66D; } .day-btn[data-day="3"].active    { background:#FFE66D; }
+.day-btn[data-day="4"]    { border-color:#A8E6CF;color:#A8E6CF; } .day-btn[data-day="4"].active    { background:#A8E6CF; }
+.day-btn[data-day="5"]    { border-color:#C3A6FF;color:#C3A6FF; } .day-btn[data-day="5"].active    { background:#C3A6FF; }
+.day-btn[data-day="6"]    { border-color:#FFB347;color:#FFB347; } .day-btn[data-day="6"].active    { background:#FFB347; }
+.day-btn[data-day="7"]    { border-color:#FF85A1;color:#FF85A1; } .day-btn[data-day="7"].active    { background:#FF85A1; }
+.day-btn[data-day="food"] { border-color:#98FB98;color:#98FB98; } .day-btn[data-day="food"].active { background:#98FB98; }
+#legendPanel { position: fixed; bottom: 44px; right: 12px; z-index: 1999; background: rgba(13,13,13,0.96); border: 1px solid #333; border-radius: 8px; padding: 12px 14px; backdrop-filter: blur(10px); transition: opacity 0.2s, transform 0.2s; }
+#legendPanel.hidden { opacity: 0; pointer-events: none; transform: translateY(6px); }
+#legendPanel h4 { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 1px; color: #555; margin-bottom: 8px; text-transform: uppercase; }
+.legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 11px; color: #ccc; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.main { display: flex; flex: 1; overflow: hidden; position: relative; height: 100vh; }
 .sidebar { width: 300px; min-width: 300px; background: #111; border-right: 1px solid #222; overflow-y: auto; flex-shrink: 0; font-size: 12px; transition: width 0.3s, min-width 0.3s, opacity 0.2s; }
 .sidebar.collapsed { width: 0; min-width: 0; opacity: 0; overflow: hidden; }
 .sidebar::-webkit-scrollbar { width: 4px; }
 .sidebar::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-.sidebar-toggle { position: absolute; top: 50%; left: 300px; transform: translateY(-50%); z-index: 1001; background: #1a1a1a; border: 1px solid #333; border-left: none; color: #aaa; border-radius: 0 6px 6px 0; width: 20px; height: 60px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 11px; transition: left 0.3s, background 0.2s; }
+.sidebar-toggle { position: absolute; top: 50%; left: 300px; transform: translateY(-50%); z-index: 1001; background: #1a1a1a; border: 1px solid #333; border-left: none; color: #aaa; border-radius: 0 6px 6px 0; width: 18px; height: 54px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; transition: left 0.3s; }
 .sidebar-toggle:hover { background: #2a2a2a; color: #fff; }
 .sidebar-toggle.collapsed { left: 0; }
 .day-group { border-bottom: 1px solid #1a1a1a; }
-.day-header { padding: 10px 14px 8px; font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 700; position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 8px; letter-spacing: -0.2px; }
-.day-header .day-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.day-header .day-count { font-family: 'DM Mono', monospace; font-size: 10px; opacity: 0.6; margin-left: auto; }
-.place-row { padding: 7px 14px 7px 28px; cursor: pointer; transition: background 0.15s; display: flex; align-items: flex-start; gap: 8px; border-left: 3px solid transparent; }
+.day-header { padding: 10px 14px 8px; font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 700; position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 8px; }
+.day-header .day-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.day-header .day-count { font-family: 'DM Mono', monospace; font-size: 10px; opacity: 0.5; margin-left: auto; }
+.place-row { padding: 6px 10px 6px 24px; cursor: pointer; transition: background 0.15s; display: flex; align-items: center; gap: 7px; border-left: 3px solid transparent; }
 .place-row:hover { background: #1a1a1a; }
-.place-row .num { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; opacity: 0.5; min-width: 22px; padding-top: 2px; }
+.place-row .num { font-family: 'DM Mono', monospace; font-size: 10px; opacity: 0.45; min-width: 20px; }
 .place-row .emoji { font-size: 13px; min-width: 18px; }
-.place-row .name { flex: 1; font-size: 11.5px; line-height: 1.4; color: #ccc; }
-.place-row .stay { font-family: 'DM Mono', monospace; font-size: 9px; color: #666; white-space: nowrap; padding-top: 2px; }
-.transport-row-s { padding: 3px 14px 3px 62px; font-family: 'DM Mono', monospace; font-size: 10px; color: #555; display: flex; align-items: center; gap: 6px; }
-.transport-row-s .t-time { color: #888; margin-left: auto; }
-.food-row { padding: 6px 14px 6px 28px; display: flex; align-items: center; gap: 8px; border-left: 3px solid #98FB98; cursor: pointer; transition: background 0.15s; }
+.place-row .name { flex: 1; font-size: 11px; color: #ccc; line-height: 1.3; }
+.place-row .stay { font-family: 'DM Mono', monospace; font-size: 9px; color: #555; white-space: nowrap; }
+.day-switch { display: flex; gap: 2px; margin-left: 4px; }
+.day-switch button { background: #1e1e1e; border: 1px solid #333; color: #777; border-radius: 4px; width: 18px; height: 18px; font-size: 9px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; padding: 0; }
+.day-switch button:hover { background: #333; color: #fff; }
+.transport-row-s { padding: 2px 10px 2px 56px; font-family: 'DM Mono', monospace; font-size: 10px; color: #444; display: flex; align-items: center; gap: 5px; }
+.transport-row-s .t-time { color: #666; margin-left: auto; }
+.food-row { padding: 6px 10px 6px 24px; display: flex; align-items: center; gap: 7px; border-left: 3px solid #98FB98; cursor: pointer; transition: background 0.15s; }
 .food-row:hover { background: #111a11; }
-.food-row .f-emoji { font-size: 14px; }
 .food-row .f-name { font-size: 11px; color: #98FB98; flex: 1; }
 .food-row .f-price { font-family: 'DM Mono', monospace; font-size: 10px; color: #6a9b6a; }
 #map { flex: 1; }
-.marker-pin { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
-.marker-circle { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #000; border: 2px solid rgba(0,0,0,0.3); box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(255,255,255,0.15); flex-direction: column; line-height: 1.1; text-align: center; }
-.marker-circle .m-emoji { font-size: 12px; line-height: 1; }
-.marker-circle .m-num { font-size: 9px; font-weight: 700; }
-.marker-tail { width: 2px; height: 6px; background: rgba(0,0,0,0.4); margin-top: -1px; }
-.food-marker { width: 26px; height: 26px; border-radius: 50%; background: #1a2a1a; border: 2px solid #98FB98; display: flex; align-items: center; justify-content: center; font-size: 13px; box-shadow: 0 2px 6px rgba(0,0,0,0.5); cursor: pointer; }
-.leaflet-popup-content-wrapper { background: #1a1a1a; color: #f0ebe0; border: 1px solid #333; border-radius: 6px; box-shadow: 0 8px 32px rgba(0,0,0,0.6); font-family: 'DM Sans', sans-serif; max-width: 260px; }
+.marker-pin { display: flex; flex-direction: column; align-items: center; }
+.marker-circle { width: 32px; height: 32px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #000; border: 2px solid rgba(0,0,0,0.3); box-shadow: 0 2px 8px rgba(0,0,0,0.5); line-height: 1; }
+.marker-circle .m-emoji { font-size: 11px; }
+.marker-circle .m-num { font-size: 8px; font-weight: 700; }
+.marker-tail { width: 2px; height: 5px; margin-top: -1px; }
+.food-marker { width: 24px; height: 24px; border-radius: 50%; background: #1a2a1a; border: 2px solid #98FB98; display: flex; align-items: center; justify-content: center; font-size: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.5); }
+.leaflet-popup-content-wrapper { background: #1a1a1a; color: #f0ebe0; border: 1px solid #333; border-radius: 6px; box-shadow: 0 8px 32px rgba(0,0,0,0.6); font-family: 'DM Sans', sans-serif; }
 .leaflet-popup-tip { background: #1a1a1a; }
-.leaflet-popup-content { margin: 14px 16px; }
-.popup-title { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 700; margin-bottom: 6px; line-height: 1.3; }
-.popup-meta { font-size: 11px; color: #888; margin-bottom: 8px; font-family: 'DM Mono', monospace; }
-.popup-desc { font-size: 12px; color: #aaa; line-height: 1.5; }
-.popup-transport { margin-top: 10px; padding-top: 10px; border-top: 1px solid #333; font-size: 11px; color: #777; font-family: 'DM Mono', monospace; }
-.popup-transport span { color: #aaa; }
-.legend-panel { position: absolute; bottom: 16px; right: 16px; z-index: 1000; background: rgba(13,13,13,0.92); border: 1px solid #333; border-radius: 6px; padding: 12px 14px; backdrop-filter: blur(8px); font-size: 11px; }
-.legend-panel h4 { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1px; color: #666; margin-bottom: 8px; text-transform: uppercase; }
-.legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 11px; color: #ccc; }
-.legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.leaflet-popup-content { margin: 12px 14px; }
+.popup-title { font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 700; margin-bottom: 5px; line-height: 1.3; }
+.popup-meta { font-size: 10px; color: #888; margin-bottom: 7px; font-family: 'DM Mono', monospace; }
+.popup-desc { font-size: 11px; color: #aaa; line-height: 1.5; }
+.popup-day-switch { margin-top: 10px; padding-top: 8px; border-top: 1px solid #2a2a2a; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-family: 'DM Mono', monospace; font-size: 10px; color: #555; }
+.popup-day-switch button { background: #222; border: 1px solid #444; color: #aaa; border-radius: 4px; padding: 3px 8px; font-size: 10px; cursor: pointer; }
+.popup-day-switch button:hover { background: #333; color: #fff; }
 </style>
 </head>
 <body>
-<div class="header">
-  <h1>Lon<em>don</em></h1>
-  <button class="header-toggle" onclick="toggleHeader()">&#9650; Hide filters</button>
-  <div class="day-filters" id="dayFilters">
-    <button class="day-btn active" data-day="all" onclick="filterDay('all',this)">ALL</button>
-    <button class="day-btn" data-day="1" onclick="filterDay('1',this)">DAY 1</button>
-    <button class="day-btn" data-day="2" onclick="filterDay('2',this)">DAY 2</button>
-    <button class="day-btn" data-day="3" onclick="filterDay('3',this)">DAY 3</button>
-    <button class="day-btn" data-day="4" onclick="filterDay('4',this)">DAY 4</button>
-    <button class="day-btn" data-day="5" onclick="filterDay('5',this)">DAY 5</button>
-    <button class="day-btn" data-day="6" onclick="filterDay('6',this)">DAY 6</button>
-    <button class="day-btn" data-day="7" onclick="filterDay('7',this)">DAY 7</button>
+<button class="float-btn" id="btnFilters" onclick="toggleFilters()">&#9776; Filters</button>
+<button class="float-btn" id="btnSidebar" onclick="toggleSidebar()">&#9776; List</button>
+<button class="float-btn" id="btnLegend"  onclick="toggleLegend()">&#9660; Legend</button>
+<div id="filterPanel">
+  <h4>Filter by day</h4>
+  <div class="filter-row">
+    <button class="day-btn active" data-day="all"  onclick="filterDay('all',this)">ALL</button>
+    <button class="day-btn" data-day="1"   onclick="filterDay('1',this)">DAY 1</button>
+    <button class="day-btn" data-day="2"   onclick="filterDay('2',this)">DAY 2</button>
+    <button class="day-btn" data-day="3"   onclick="filterDay('3',this)">DAY 3</button>
+    <button class="day-btn" data-day="4"   onclick="filterDay('4',this)">DAY 4</button>
+    <button class="day-btn" data-day="5"   onclick="filterDay('5',this)">DAY 5</button>
+    <button class="day-btn" data-day="6"   onclick="filterDay('6',this)">DAY 6</button>
+    <button class="day-btn" data-day="7"   onclick="filterDay('7',this)">DAY 7</button>
     <button class="day-btn" data-day="food" onclick="filterDay('food',this)">&#127836; FOOD</button>
   </div>
 </div>
-<div class="main">
-  <div class="sidebar" id="sidebar"></div>
-  <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">&#9664;</button>
-  <div id="map"></div>
-</div>
-<div class="legend-panel">
+<div id="legendPanel">
   <h4>Legend</h4>
   <div class="legend-item"><div class="legend-dot" style="background:#FF6B6B"></div>Day 1 - Far SW</div>
   <div class="legend-item"><div class="legend-dot" style="background:#4ECDC4"></div>Day 2 - West</div>
@@ -113,13 +107,18 @@ body { font-family: 'DM Sans', sans-serif; background: #0d0d0d; color: #f0ebe0; 
   <div class="legend-item"><div class="legend-dot" style="background:#C3A6FF"></div>Day 5 - City</div>
   <div class="legend-item"><div class="legend-dot" style="background:#FFB347"></div>Day 6 - East</div>
   <div class="legend-item"><div class="legend-dot" style="background:#FF85A1"></div>Day 7 - Greenwich</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#98FB98"></div>Food</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#98FB98"></div>&#127836; Food</div>
+</div>
+<div class="main">
+  <div class="sidebar" id="sidebar"></div>
+  <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">&#9664;</button>
+  <div id="map"></div>
 </div>
 <script>
-const DAY_COLORS={'1':'#FF6B6B','2':'#4ECDC4','3':'#FFE66D','4':'#A8E6CF','5':'#C3A6FF','6':'#FFB347','7':'#FF85A1','food':'#98FB98'};
-const DAY_LABELS={'1':'DAY 1 - Far SW: Kew & Richmond','2':'DAY 2 - West: Chiswick - Notting Hill - Hyde Park','3':'DAY 3 - Centre: Mayfair - West End - Soho - Covent Garden','4':'DAY 4 - Westminster - Southbank - Kings Cross','5':'DAY 5 - The City - Bloomsbury - Holborn','6':'DAY 6 - East London','7':'DAY 7 - Greenwich & Peninsula'};
-const DAY_EMOJI={'1':'🌿','2':'🏘️','3':'🎭','4':'👑','5':'⛪','6':'🚢','7':'⚓'};
-const PLACES=[
+var DAY_COLORS={'1':'#FF6B6B','2':'#4ECDC4','3':'#FFE66D','4':'#A8E6CF','5':'#C3A6FF','6':'#FFB347','7':'#FF85A1','food':'#98FB98'};
+var DAY_NAMES={'1':'Far SW','2':'West','3':'Centre','4':'Westminster','5':'City','6':'East','7':'Greenwich'};
+var DAY_EMOJI={'1':'🌿','2':'🏘️','3':'🎭','4':'👑','5':'⛪','6':'🚢','7':'⚓'};
+var PLACES=[
 ['p1','1','01','🌿','Isabella Plantation Richmond Park',51.4350,-0.2780,'1-2h','55','Tube+Bus','Woodland garden. District to Richmond plus Bus 371.'],
 ['p2','1','02','🌳','Treetop Walkway Kew Gardens',51.4785,-0.2956,'2-3h','15','Walk','18m canopy walkway. Entry approx 22.'],
 ['p3','2','03','🏢','Chiswick Business Park',51.4932,-0.2626,'30m','35','Tube','District to Gunnersbury. Architecture and gardens.'],
@@ -201,11 +200,11 @@ const PLACES=[
 ['p79','7','A10','🌶️','Brixton Market and Electric Avenue',51.4615,-0.1143,'1.5h','20','Tube','Afro-Caribbean market, jerk chicken.'],
 ['p80','6','A5','🌺','Portobello Road Saturday Market',51.5165,-0.2022,'1.5h','15','Tube','Full antiques market on Saturdays.'],
 ];
-const FOOD=[
+var FOOD=[
 ['f1','🌯 Wrap It Up Oxford Street',51.5152,-0.1419,'Huge wraps from 5.','4-6','Oxford Street'],
 ['f2','🥙 Kati Roll Company Soho',51.5128,-0.1340,'Indian street food rolls.','5-7','Soho'],
 ['f3','🍜 Bao Soho',51.5120,-0.1300,'Taiwanese steamed buns.','8-12','Soho'],
-['f4','🥐 Paul Bakery Covent Garden',51.5115,-0.1238,'French sandwiches and pastries from 4.','3-6','Covent Garden'],
+['f4','🥐 Paul Bakery Covent Garden',51.5115,-0.1238,'French sandwiches and pastries.','3-6','Covent Garden'],
 ['f5','🌮 Wahaca Southbank',51.5062,-0.1145,'Mexican street food. Tacos from 4.','8-14','Southbank'],
 ['f6','🫕 Dishoom Kings Cross',51.5325,-0.1240,'Legendary bacon naan roll.','8-12','Kings Cross'],
 ['f7','🥪 Pret a Manger',51.5080,-0.1280,'Sandwiches 4-6.','3-6','All zones'],
@@ -223,95 +222,120 @@ const FOOD=[
 ['f19','🫖 Pavilion Cafe Victoria Park',51.5366,-0.0342,'Breakfast and lunch around 8.','6-10','East London'],
 ['f20','🍦 Crosstown Doughnuts',51.5130,-0.1360,'Artisan doughnuts around 4 each.','4','All zones'],
 ];
-const map=L.map('map',{center:[51.5074,-0.1278],zoom:13,zoomControl:true});
+var map=L.map('map',{center:[51.5074,-0.1278],zoom:13,zoomControl:true});
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO',maxZoom:19}).addTo(map);
 function makeIcon(color,num,emoji){
-  const html='<div class="marker-pin"><div class="marker-circle" style="background:'+color+';border-color:'+color+'cc;"><span class="m-emoji">'+emoji+'</span><span class="m-num">'+num+'</span></div><div class="marker-tail" style="background:'+color+'88"></div></div>';
-  return L.divIcon({html:html,className:'',iconSize:[34,42],iconAnchor:[17,42],popupAnchor:[0,-44]});
+  var html='<div class="marker-pin"><div class="marker-circle" style="background:'+color+';border-color:'+color+'cc;"><span class="m-emoji">'+emoji+'</span><span class="m-num">'+num+'</span></div><div class="marker-tail" style="background:'+color+'88"></div></div>';
+  return L.divIcon({html:html,className:'',iconSize:[32,40],iconAnchor:[16,40],popupAnchor:[0,-42]});
 }
 function makeFoodIcon(){
-  return L.divIcon({html:'<div class="food-marker">&#127836;</div>',className:'',iconSize:[26,26],iconAnchor:[13,13],popupAnchor:[0,-15]});
+  return L.divIcon({html:'<div class="food-marker">&#127836;</div>',className:'',iconSize:[24,24],iconAnchor:[12,12],popupAnchor:[0,-14]});
 }
-var allMarkers={},allPolylines={},foodMarkers=[];
-var byDay={};
-PLACES.forEach(function(p){if(!byDay[p[1]])byDay[p[1]]=[];byDay[p[1]].push(p);});
-var sidebar=document.getElementById('sidebar');
-['1','2','3','4','5','6','7'].forEach(function(day){
-  var group=byDay[day]||[];
-  var grpDiv=document.createElement('div');
-  grpDiv.className='day-group';grpDiv.dataset.day=day;
-  var hdr=document.createElement('div');
-  hdr.className='day-header';
-  hdr.style.background=DAY_COLORS[day]+'22';
-  hdr.innerHTML='<div class="day-dot" style="background:'+DAY_COLORS[day]+'"></div>'+DAY_EMOJI[day]+' '+DAY_LABELS[day]+'<span class="day-count">'+group.length+' stops</span>';
-  grpDiv.appendChild(hdr);
-  group.forEach(function(p,idx){
-    var id=p[0],pday=p[1],num=p[2],emoji=p[3],name=p[4],lat=p[5],lng=p[6],stay=p[7],transMin=p[8],transMode=p[9],desc=p[10];
-    var color=DAY_COLORS[pday];
-    if(idx>0&&transMin){
-      var tr=document.createElement('div');
-      tr.className='transport-row-s';
-      tr.innerHTML='<span>'+transMode+'</span><span style="color:#555">'+transMode+'</span><span class="t-time">'+transMin+' min</span>';
-      grpDiv.appendChild(tr);
-    }
-    var row=document.createElement('div');
-    row.className='place-row';row.dataset.id=id;row.style.borderLeftColor=color;
-    row.innerHTML='<span class="num">'+num+'</span><span class="emoji">'+emoji+'</span><span class="name">'+name+'</span><span class="stay">'+stay+'</span>';
-    row.onclick=function(){var mk=allMarkers[id];if(mk){map.setView([lat,lng],16);mk.marker.openPopup();}};
-    grpDiv.appendChild(row);
-    var marker=L.marker([lat,lng],{icon:makeIcon(color,num,emoji)}).addTo(map).bindPopup(
-      '<div class="popup-title">'+emoji+' '+name+'</div><div class="popup-meta" style="color:'+color+'">'+DAY_EMOJI[day]+' Day '+day+' - Stay: '+stay+'</div><div class="popup-desc">'+desc+'</div>'+(transMin?'<div class="popup-transport">'+transMode+' <span>'+transMin+' min from previous</span></div>':''),
-      {maxWidth:260}
-    );
-    allMarkers[id]={marker:marker,day:pday,lat:lat,lng:lng};
-  });
-  sidebar.appendChild(grpDiv);
-  var coords=group.map(function(p){return[p[5],p[6]];});
-  if(coords.length>1){
-    allPolylines[day]=L.polyline(coords,{color:DAY_COLORS[day],weight:2.5,opacity:0.55,dashArray:'6,8'}).addTo(map);
-  }
+var placeData=PLACES.map(function(p){
+  return{id:p[0],origDay:p[1],day:p[1],num:p[2],emoji:p[3],name:p[4],lat:p[5],lng:p[6],stay:p[7],transMin:p[8],transMode:p[9],desc:p[10],marker:null,rowEl:null};
 });
-var foodGrp=document.createElement('div');
-foodGrp.className='day-group';foodGrp.dataset.day='food';
-foodGrp.innerHTML='<div class="day-header" style="background:#98FB9822;color:#98FB98"><div class="day-dot" style="background:#98FB98"></div>&#127836; Budget Food Spots<span class="day-count">'+FOOD.length+' spots</span></div>';
+var allPolylines={},foodMarkers=[],currentFilter='all';
+var filtersVisible=true,legendVisible=true,sidebarOpen=true;
+placeData.forEach(function(p){
+  var color=DAY_COLORS[p.day];
+  var marker=L.marker([p.lat,p.lng],{icon:makeIcon(color,p.num,p.emoji)}).addTo(map).bindPopup(buildPopup(p),{maxWidth:260});
+  p.marker=marker;
+});
+function buildPopup(p){
+  var color=DAY_COLORS[p.day];
+  var days=['1','2','3','4','5','6','7'];
+  var idx=days.indexOf(p.day);
+  var prevDay=idx>0?days[idx-1]:null;
+  var nextDay=idx<days.length-1?days[idx+1]:null;
+  var switchHtml='<div class="popup-day-switch">Move: ';
+  if(prevDay) switchHtml+='<button onclick="movePlace(\''+p.id+'\',\''+prevDay+'\')">&#9664; Day '+prevDay+'</button>';
+  if(nextDay) switchHtml+='<button onclick="movePlace(\''+p.id+'\',\''+nextDay+'\')">Day '+nextDay+' &#9654;</button>';
+  switchHtml+='</div>';
+  return '<div class="popup-title">'+p.emoji+' '+p.name+'</div>'+'<div class="popup-meta" style="color:'+color+'">'+DAY_EMOJI[p.day]+' Day '+p.day+' ('+DAY_NAMES[p.day]+') - Stay: '+p.stay+'</div>'+'<div class="popup-desc">'+p.desc+'</div>'+switchHtml;
+}
+function movePlace(id,newDay){
+  var p=placeData.find(function(x){return x.id===id;});
+  if(!p) return;
+  p.day=newDay;
+  var color=DAY_COLORS[newDay];
+  p.marker.setIcon(makeIcon(color,p.num,p.emoji));
+  p.marker.setPopupContent(buildPopup(p));
+  buildSidebar();
+  buildPolylines();
+  applyFilter(currentFilter);
+  map.closePopup();
+}
+var sidebar=document.getElementById('sidebar');
+function buildSidebar(){
+  sidebar.innerHTML='';
+  ['1','2','3','4','5','6','7'].forEach(function(day){
+    var group=placeData.filter(function(p){return p.day===day;});
+    if(group.length===0) return;
+    var grpDiv=document.createElement('div');
+    grpDiv.className='day-group';grpDiv.dataset.day=day;
+    var hdr=document.createElement('div');
+    hdr.className='day-header';
+    hdr.style.background=DAY_COLORS[day]+'22';
+    hdr.innerHTML='<div class="day-dot" style="background:'+DAY_COLORS[day]+'"></div>'+DAY_EMOJI[day]+' Day '+day+' - '+DAY_NAMES[day]+'<span class="day-count">'+group.length+'</span>';
+    grpDiv.appendChild(hdr);
+    group.forEach(function(p,idx){
+      var color=DAY_COLORS[p.day];
+      if(idx>0&&p.transMin){
+        var tr=document.createElement('div');
+        tr.className='transport-row-s';
+        tr.innerHTML='<span>'+p.transMode+'</span><span class="t-time">'+p.transMin+' min</span>';
+        grpDiv.appendChild(tr);
+      }
+      var row=document.createElement('div');
+      row.className='place-row';row.style.borderLeftColor=color;
+      var days=['1','2','3','4','5','6','7'];
+      var dIdx=days.indexOf(p.day);
+      var prevD=dIdx>0?days[dIdx-1]:null;
+      var nextD=dIdx<days.length-1?days[dIdx+1]:null;
+      var switchBtns='<div class="day-switch">';
+      if(prevD) switchBtns+='<button title="Move to Day '+prevD+'" onclick="event.stopPropagation();movePlace(\''+p.id+'\',\''+prevD+'\')">&#9664;</button>';
+      if(nextD) switchBtns+='<button title="Move to Day '+nextD+'" onclick="event.stopPropagation();movePlace(\''+p.id+'\',\''+nextD+'\')">&#9654;</button>';
+      switchBtns+='</div>';
+      row.innerHTML='<span class="num">'+p.num+'</span><span class="emoji">'+p.emoji+'</span><span class="name">'+p.name+'</span><span class="stay">'+p.stay+'</span>'+switchBtns;
+      (function(pp){row.onclick=function(){map.setView([pp.lat,pp.lng],16);pp.marker.openPopup();};})(p);
+      p.rowEl=row;
+      grpDiv.appendChild(row);
+    });
+    sidebar.appendChild(grpDiv);
+  });
+  var foodGrp=document.createElement('div');
+  foodGrp.className='day-group';foodGrp.dataset.day='food';
+  foodGrp.innerHTML='<div class="day-header" style="background:#98FB9822;color:#98FB98"><div class="day-dot" style="background:#98FB98"></div>&#127836; Budget Food<span class="day-count">'+FOOD.length+'</span></div>';
+  FOOD.forEach(function(f){
+    var row=document.createElement('div');
+    row.className='food-row';
+    var emoji=f[1].split(' ')[0];
+    row.innerHTML='<span style="font-size:13px">'+emoji+'</span><span class="f-name">'+f[1].replace(/^[^\s]+\s/,'')+'</span><span class="f-price">'+f[5]+'</span>';
+    (function(ff){row.onclick=function(){map.setView([ff[2],ff[3]],16);};})(f);
+    foodGrp.appendChild(row);
+  });
+  sidebar.appendChild(foodGrp);
+}
+function buildPolylines(){
+  Object.values(allPolylines).forEach(function(p){map.removeLayer(p);});
+  allPolylines={};
+  ['1','2','3','4','5','6','7'].forEach(function(day){
+    var group=placeData.filter(function(p){return p.day===day;});
+    var coords=group.map(function(p){return[p.lat,p.lng];});
+    if(coords.length>1){
+      allPolylines[day]=L.polyline(coords,{color:DAY_COLORS[day],weight:2.5,opacity:0.5,dashArray:'6,8'}).addTo(map);
+    }
+  });
+}
 FOOD.forEach(function(f){
-  var id=f[0],name=f[1],lat=f[2],lng=f[3],desc=f[4],price=f[5],near=f[6];
-  var row=document.createElement('div');
-  row.className='food-row';
-  var emoji=name.split(' ')[0];
-  row.innerHTML='<span class="f-emoji">'+emoji+'</span><span class="f-name">'+name.replace(/^[^\s]+\s/,'')+'</span><span class="f-price">'+price+'</span>';
-  row.onclick=function(){map.setView([lat,lng],16);};
-  foodGrp.appendChild(row);
-  var mk=L.marker([lat,lng],{icon:makeFoodIcon()}).addTo(map).bindPopup(
-    '<div class="popup-title">'+name+'</div><div class="popup-meta" style="color:#98FB98">Near: '+near+'</div><div class="popup-desc">'+desc+'</div>',
-    {maxWidth:240}
-  );
+  var mk=L.marker([f[2],f[3]],{icon:makeFoodIcon()}).addTo(map).bindPopup('<div class="popup-title">'+f[1]+'</div><div class="popup-meta" style="color:#98FB98">Near: '+f[6]+'</div><div class="popup-desc">'+f[4]+'</div>',{maxWidth:230});
   foodMarkers.push(mk);
 });
-sidebar.appendChild(foodGrp);
-var sidebarOpen=true;
-var headerOpen=true;
-function toggleSidebar(){
-  sidebarOpen=!sidebarOpen;
-  var sb=document.getElementById('sidebar');
-  var btn=document.getElementById('sidebarToggle');
-  if(sidebarOpen){sb.classList.remove('collapsed');btn.classList.remove('collapsed');btn.textContent='&#9664;';}
-  else{sb.classList.add('collapsed');btn.classList.add('collapsed');btn.textContent='&#9654;';}
-  setTimeout(function(){map.invalidateSize();},320);
-}
-function toggleHeader(){
-  headerOpen=!headerOpen;
-  var filters=document.getElementById('dayFilters');
-  var btn=document.querySelector('.header-toggle');
-  if(headerOpen){filters.classList.remove('hidden');btn.textContent='&#9650; Hide filters';}
-  else{filters.classList.add('hidden');btn.textContent='&#9660; Show filters';}
-}
-function filterDay(day,btn){
-  document.querySelectorAll('.day-btn').forEach(function(b){b.classList.remove('active');});
-  btn.classList.add('active');
-  Object.values(allMarkers).forEach(function(o){
-    if(day==='all'||o.day===day){if(!map.hasLayer(o.marker))map.addLayer(o.marker);}
-    else{if(map.hasLayer(o.marker))map.removeLayer(o.marker);}
+function applyFilter(day){
+  currentFilter=day;
+  placeData.forEach(function(p){
+    if(day==='all'||p.day===day){if(!map.hasLayer(p.marker))map.addLayer(p.marker);}
+    else{if(map.hasLayer(p.marker))map.removeLayer(p.marker);}
   });
   Object.entries(allPolylines).forEach(function(e){
     if(day==='all'||e[0]===day){if(!map.hasLayer(e[1]))map.addLayer(e[1]);}
@@ -327,12 +351,38 @@ function filterDay(day,btn){
   if(day!=='all'){
     var points=[];
     if(day==='food'){FOOD.forEach(function(f){points.push([f[2],f[3]]);});}
-    else{PLACES.filter(function(p){return p[1]===day;}).forEach(function(p){points.push([p[5],p[6]]);});}
+    else{placeData.filter(function(p){return p.day===day;}).forEach(function(p){points.push([p.lat,p.lng]);});}
     if(points.length)map.fitBounds(points,{padding:[60,60]});
-  } else {
-    map.setView([51.5074,-0.1278],12);
-  }
+  } else {map.setView([51.5074,-0.1278],12);}
 }
+function filterDay(day,btn){
+  document.querySelectorAll('.day-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  applyFilter(day);
+}
+function toggleFilters(){
+  filtersVisible=!filtersVisible;
+  document.getElementById('filterPanel').classList.toggle('hidden',!filtersVisible);
+  document.getElementById('btnFilters').textContent=filtersVisible?'x Filters':'= Filters';
+}
+function toggleLegend(){
+  legendVisible=!legendVisible;
+  document.getElementById('legendPanel').classList.toggle('hidden',!legendVisible);
+  document.getElementById('btnLegend').textContent=legendVisible?'v Legend':'^ Legend';
+}
+function toggleSidebar(){
+  sidebarOpen=!sidebarOpen;
+  var sb=document.getElementById('sidebar');
+  var tog=document.getElementById('sidebarToggle');
+  sb.classList.toggle('collapsed',!sidebarOpen);
+  tog.classList.toggle('collapsed',!sidebarOpen);
+  tog.innerHTML=sidebarOpen?'&#9664;':'&#9654;';
+  document.getElementById('btnSidebar').textContent=sidebarOpen?'x List':'= List';
+  setTimeout(function(){map.invalidateSize();},320);
+}
+buildSidebar();
+buildPolylines();
+applyFilter('all');
 </script>
 </body>
 </html>
