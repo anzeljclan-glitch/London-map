@@ -470,13 +470,22 @@ var expandedTrans={},dragSrcId=null,nextDayNum=8,nextPlaceId=400;
 var sheet=document.getElementById('sheet');
 var sheetStates=['peek','half','full'],sheetState='peek';
 var touchStartY=0,touchStartTime=0;
-document.getElementById('sheetHandle').addEventListener('touchstart',function(e){touchStartY=e.touches[0].clientY;touchStartTime=Date.now();},{passive:true});
-document.getElementById('sheetHandle').addEventListener('touchend',function(e){
+function onSheetTouchStart(e){touchStartY=e.touches[0].clientY;touchStartTime=Date.now();}
+function onSheetTouchEnd(e){
   var dy=e.changedTouches[0].clientY-touchStartY,dt=Date.now()-touchStartTime,idx=sheetStates.indexOf(sheetState);
   if(Math.abs(dy)<10&&dt<250){setSheet(sheetStates[(idx+1)%sheetStates.length]);}
   else if(dy<-30&&idx<sheetStates.length-1){setSheet(sheetStates[idx+1]);}
   else if(dy>30&&idx>0){setSheet(sheetStates[idx-1]);}
-},{passive:true});
+}
+function cycleSheet(){var idx=sheetStates.indexOf(sheetState);setSheet(sheetStates[(idx+1)%sheetStates.length]);}
+var shHandle=document.getElementById('sheetHandle');
+var shHeader=document.getElementById('sheetHeader');
+shHandle.addEventListener('touchstart',onSheetTouchStart,{passive:true});
+shHandle.addEventListener('touchend',onSheetTouchEnd,{passive:true});
+shHandle.addEventListener('click',cycleSheet);
+shHeader.addEventListener('touchstart',onSheetTouchStart,{passive:true});
+shHeader.addEventListener('touchend',onSheetTouchEnd,{passive:true});
+shHeader.addEventListener('click',function(e){if(!e.target.closest('#memoryBtn'))cycleSheet();});
 function setSheet(s){sheetState=s;sheet.className=s;if(s!=='peek')setTimeout(function(){map.invalidateSize();},360);}
 function assignColors(){days.forEach(function(d,i){DAY_COLORS[d.id]=PALETTE[i%PALETTE.length];});}
 function makeIcon(color,num,emoji,hasPhotos){
