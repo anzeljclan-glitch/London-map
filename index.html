@@ -9,101 +9,142 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root{--bg:#0a0a0a;--surface:#141414;--surface2:#1c1c1c;--border:#252525;--text:#f0ebe0;--text2:#999;--text3:#555;--gold:#c9973a;--food:#98FB98;--safe-bottom:env(safe-area-inset-bottom,0px);}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;}
 #map{position:fixed;inset:0;z-index:1;}
-#topBar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,10,0.9);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:10px 14px 8px;display:flex;flex-direction:column;gap:8px;}
-#topBar h1{font-family:'Playfair Display',serif;font-size:20px;font-weight:900;letter-spacing:-0.5px;color:var(--text);}
+
+/* TOP BAR */
+#topBar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,10,0.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:10px 14px 8px;display:flex;flex-direction:column;gap:8px;}
+#topRow{display:flex;align-items:center;gap:10px;}
+#topBar h1{font-family:'Playfair Display',serif;font-size:20px;font-weight:900;letter-spacing:-0.5px;color:var(--text);flex:1;}
 #topBar h1 em{color:var(--gold);font-style:italic;}
-#dayChips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;-ms-overflow-style:none;}
+#dayChips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;}
 #dayChips::-webkit-scrollbar{display:none;}
-.chip{flex-shrink:0;padding:5px 13px;border-radius:20px;border:1.5px solid;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;cursor:pointer;background:transparent;color:var(--text);transition:all 0.18s;white-space:nowrap;}
+.chip{flex-shrink:0;padding:5px 13px;border-radius:20px;border:1.5px solid;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;cursor:pointer;background:transparent;transition:all 0.18s;white-space:nowrap;}
 .chip.active{color:#000!important;}
 .chip[data-day="all"]{border-color:#666;color:#666;}.chip[data-day="all"].active{background:#666;}
 .chip[data-day="food"]{border-color:var(--food);color:var(--food);}.chip[data-day="food"].active{background:var(--food);color:#000;}
-#sheet{position:fixed;left:0;right:0;bottom:0;z-index:200;background:var(--surface);border-radius:18px 18px 0 0;border-top:1px solid var(--border);box-shadow:0 -8px 40px rgba(0,0,0,0.6);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);display:flex;flex-direction:column;max-height:85vh;}
+
+/* AUTH BUTTON */
+#authBtn{display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all 0.2s;white-space:nowrap;flex-shrink:0;}
+#authBtn:active{background:#2a2a2a;}
+#authBtn img{width:16px;height:16px;border-radius:50%;}
+#authBtn .auth-dot{width:8px;height:8px;border-radius:50%;background:#444;flex-shrink:0;}
+#authBtn .auth-dot.connected{background:#4CAF50;}
+
+/* SHEET */
+#sheet{position:fixed;left:0;right:0;bottom:0;z-index:200;background:var(--surface);border-radius:18px 18px 0 0;border-top:1px solid var(--border);box-shadow:0 -8px 40px rgba(0,0,0,0.6);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);display:flex;flex-direction:column;max-height:88vh;}
 #sheet.peek{transform:translateY(calc(100% - 56px - var(--safe-bottom)));}
-#sheet.half{transform:translateY(40%);}
+#sheet.half{transform:translateY(38%);}
 #sheet.full{transform:translateY(0);}
-#sheetHandle{width:36px;height:4px;background:#333;border-radius:2px;margin:10px auto 6px;flex-shrink:0;cursor:grab;}
+#sheetHandle{width:36px;height:4px;background:#2a2a2a;border-radius:2px;margin:10px auto 6px;flex-shrink:0;cursor:grab;}
 #sheetHeader{padding:0 16px 10px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
 #sheetTitle{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;flex:1;}
 #sheetCount{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);}
+#memoryBtn{padding:5px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--gold);font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;display:flex;align-items:center;gap:5px;}
+#memoryBtn:active{background:#2a2a2a;}
 #sheetContent{flex:1;overflow-y:auto;padding-bottom:calc(16px + var(--safe-bottom));-webkit-overflow-scrolling:touch;}
 #sheetContent::-webkit-scrollbar{display:none;}
+
+/* DAY SECTIONS */
 .day-section{border-bottom:1px solid var(--border);}
 .day-sec-header{padding:10px 16px 8px;display:flex;align-items:center;gap:9px;position:sticky;top:0;z-index:5;background:var(--surface);}
 .day-sec-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
 .day-sec-name{font-family:'Playfair Display',serif;font-size:14px;font-weight:700;flex:1;}
 .day-sec-count{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);}
 .day-sec-actions{display:flex;gap:6px;}
-.icon-btn{width:28px;height:28px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
-.icon-btn:active{background:#2a2a2a;transform:scale(0.93);}
-.place-row{padding:10px 16px 10px 14px;display:flex;align-items:center;gap:10px;border-left:3px solid transparent;cursor:pointer;transition:background 0.12s;min-height:52px;}
+.icon-btn{width:30px;height:30px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.icon-btn:active{background:#2a2a2a;transform:scale(0.92);}
+
+/* PLACE ROW */
+.place-row{padding:10px 14px 10px 14px;display:flex;align-items:center;gap:10px;border-left:3px solid transparent;cursor:pointer;transition:background 0.12s;min-height:56px;}
 .place-row:active{background:var(--surface2);}
 .place-row.dragging{opacity:0.3;}
 .place-row.drag-over{border-top:2px solid var(--gold);}
-.drag-handle{color:#333;font-size:14px;flex-shrink:0;cursor:grab;padding:4px;}
+.drag-handle{color:#2a2a2a;font-size:14px;flex-shrink:0;padding:4px;}
 .place-num{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);min-width:18px;}
-.place-emoji{font-size:18px;flex-shrink:0;}
+.place-emoji{font-size:20px;flex-shrink:0;}
 .place-info{flex:1;min-width:0;}
 .place-name{font-size:13px;font-weight:500;color:#ddd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.place-stay{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-top:2px;}
+.place-meta{display:flex;align-items:center;gap:8px;margin-top:3px;}
+.place-stay{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);}
+.photo-badge{font-family:'DM Mono',monospace;font-size:9px;color:var(--gold);background:rgba(201,151,58,0.12);border:1px solid rgba(201,151,58,0.25);border-radius:10px;padding:1px 6px;display:flex;align-items:center;gap:3px;}
 .place-row-btns{display:flex;gap:4px;flex-shrink:0;}
 .place-row-btns button{width:30px;height:30px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .place-row-btns button:active{background:#2a2a2a;transform:scale(0.9);}
-.place-row-btns .del-btn{color:#7a4a4a;}
-.trans-row{padding:4px 16px 4px 52px;display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:10px;color:#3a3a3a;cursor:pointer;min-height:30px;}
+.del-btn{color:#7a4a4a!important;}
+.photo-btn{color:var(--gold)!important;border-color:rgba(201,151,58,0.3)!important;}
+
+/* TRANSPORT */
+.trans-row{padding:4px 16px 4px 52px;display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:10px;color:#3a3a3a;cursor:pointer;min-height:28px;}
 .trans-row:active{color:#666;}
 .trans-mode{color:#444;flex:1;}
 .trans-time{color:#4a4a4a;}
-.trans-chevron{font-size:9px;color:#333;}
+.trans-chevron{font-size:9px;}
 .trans-alts{background:var(--bg);border-left:3px solid #1e1e1e;margin:0 12px 4px 52px;border-radius:0 6px 6px 0;}
 .trans-alt{display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid #111;font-family:'DM Mono',monospace;font-size:10px;}
 .trans-alt:last-child{border-bottom:none;}
 .ta-mode{min-width:110px;color:#888;}
 .ta-time{color:#bbb;font-weight:500;min-width:55px;}
 .ta-note{color:var(--text3);font-size:9px;flex:1;}
+
+/* FOOD */
 .food-row{padding:10px 16px 10px 14px;display:flex;align-items:center;gap:10px;border-left:3px solid var(--food);cursor:pointer;min-height:52px;transition:background 0.12s;}
 .food-row:active{background:#0f1a0f;}
-.food-emoji{font-size:18px;flex-shrink:0;}
+.food-emoji{font-size:20px;flex-shrink:0;}
 .food-info{flex:1;min-width:0;}
 .food-name{font-size:12px;color:var(--food);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.food-price{font-family:'DM Mono',monospace;font-size:10px;color:#5a8a5a;margin-top:2px;}
+.food-sub{display:flex;gap:8px;margin-top:2px;}
+.food-price{font-family:'DM Mono',monospace;font-size:10px;color:#5a8a5a;}
 .food-near{font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);}
 .add-place-row{padding:10px 16px;display:flex;align-items:center;gap:8px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);cursor:pointer;}
 .add-place-row:active{color:#aaa;}
 .add-day-row{margin:10px 14px 4px;padding:12px;border:1px dashed #2a2a2a;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:8px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);cursor:pointer;}
 .add-day-row:active{border-color:#555;color:#aaa;}
-.map-fab{position:fixed;z-index:150;width:44px;height:44px;border-radius:12px;background:rgba(14,14,14,0.92);border:1px solid #2a2a2a;color:var(--text2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);box-shadow:0 4px 16px rgba(0,0,0,0.5);transition:all 0.15s;}
-.map-fab:active{transform:scale(0.92);background:#1e1e1e;}
+
+/* MAP FABs */
+.map-fab{position:fixed;z-index:150;width:44px;height:44px;border-radius:12px;background:rgba(14,14,14,0.92);border:1px solid #2a2a2a;color:var(--text2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);box-shadow:0 4px 16px rgba(0,0,0,0.5);}
+.map-fab:active{transform:scale(0.92);}
 #fabLegend{bottom:72px;right:14px;}
 #legendPanel{position:fixed;bottom:124px;right:14px;z-index:149;background:rgba(12,12,12,0.97);border:1px solid #252525;border-radius:12px;padding:12px 14px;backdrop-filter:blur(12px);transition:opacity 0.2s,transform 0.2s;min-width:180px;}
 #legendPanel.hidden{opacity:0;pointer-events:none;transform:scale(0.9) translateY(8px);transform-origin:bottom right;}
 #legendPanel h4{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--text3);margin-bottom:8px;text-transform:uppercase;}
 .leg-item{display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:11px;color:#ccc;}
 .leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+
+/* MARKERS */
 .marker-pin{display:flex;flex-direction:column;align-items:center;}
-.marker-circle{width:30px;height:30px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#000;border:2px solid rgba(0,0,0,0.25);box-shadow:0 2px 8px rgba(0,0,0,0.5);line-height:1;}
+.marker-circle{width:30px;height:30px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#000;border:2px solid rgba(0,0,0,0.25);box-shadow:0 2px 8px rgba(0,0,0,0.5);line-height:1;position:relative;}
 .marker-circle .m-emoji{font-size:10px;}
 .marker-circle .m-num{font-size:8px;font-weight:700;}
+.marker-photo-dot{position:absolute;top:-2px;right:-2px;width:8px;height:8px;background:var(--gold);border-radius:50%;border:1px solid #000;}
 .food-marker{width:22px;height:22px;border-radius:50%;background:#1a2a1a;border:2px solid var(--food);display:flex;align-items:center;justify-content:center;font-size:11px;box-shadow:0 2px 6px rgba(0,0,0,0.5);}
+
+/* POPUPS */
 .leaflet-popup-content-wrapper{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.7);font-family:'DM Sans',sans-serif;}
 .leaflet-popup-tip{background:var(--surface);}
-.leaflet-popup-content{margin:14px 16px;min-width:200px;}
+.leaflet-popup-content{margin:14px 16px;min-width:220px;}
 .popup-title{font-family:'Playfair Display',serif;font-size:15px;font-weight:700;margin-bottom:4px;line-height:1.3;}
 .popup-meta{font-size:11px;color:var(--text2);margin-bottom:6px;font-family:'DM Mono',monospace;}
-.popup-desc{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:10px;}
-.popup-actions{display:flex;gap:6px;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--border);}
-.popup-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:7px 12px;font-size:11px;cursor:pointer;font-family:'DM Mono',monospace;}
+.popup-desc{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px;}
+.popup-photos{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px;padding-bottom:2px;}
+.popup-photos::-webkit-scrollbar{display:none;}
+.popup-photo{width:72px;height:72px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:pointer;border:1px solid var(--border);}
+.popup-photo-placeholder{width:72px;height:72px;border-radius:8px;background:var(--surface2);border:1px dashed #333;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;flex-shrink:0;font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);}
+.popup-actions{display:flex;gap:6px;flex-wrap:wrap;padding-top:8px;border-top:1px solid var(--border);}
+.popup-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:7px 11px;font-size:11px;cursor:pointer;font-family:'DM Mono',monospace;}
 .popup-btn:active{background:#2a2a2a;}
 .popup-btn.danger{border-color:#5a2020;color:#c87a7a;}
+.popup-btn.gold{border-color:rgba(201,151,58,0.4);color:var(--gold);}
 .popup-btn.success{border-color:#2a5a2a;color:var(--food);}
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1000;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:1000;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);}
 .modal-overlay.hidden{display:none;}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:20px 18px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;padding-bottom:calc(20px + var(--safe-bottom));animation:slideUp 0.28s cubic-bezier(0.32,0.72,0,1);}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:20px 18px;width:100%;max-width:500px;max-height:92vh;overflow-y:auto;padding-bottom:calc(20px + var(--safe-bottom));animation:slideUp 0.28s cubic-bezier(0.32,0.72,0,1);}
 @keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
 .modal-handle{width:36px;height:4px;background:#333;border-radius:2px;margin:0 auto 16px;}
 .modal h3{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;margin-bottom:14px;}
@@ -121,38 +162,124 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .day-grid-btn:active{transform:scale(0.95);}
 .day-grid-btn.current{color:#000!important;}
 .food-day-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
-.food-day-btn{padding:9px 14px;border-radius:20px;border:1.5px solid;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;background:transparent;transition:all 0.15s;}
+.food-day-btn{padding:9px 14px;border-radius:20px;border:1.5px solid;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;background:transparent;}
 .food-day-btn:active{transform:scale(0.95);}
-.toast{position:fixed;bottom:calc(70px + var(--safe-bottom));left:50%;transform:translateX(-50%);background:var(--gold);color:#000;padding:9px 18px;border-radius:20px;font-family:'DM Mono',monospace;font-size:12px;font-weight:600;z-index:2000;box-shadow:0 4px 20px rgba(0,0,0,0.5);white-space:nowrap;}
+
+/* PHOTO UPLOAD AREA */
+.photo-upload-area{border:2px dashed #333;border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:all 0.2s;margin-top:8px;}
+.photo-upload-area:active{border-color:var(--gold);background:rgba(201,151,58,0.05);}
+.photo-upload-area .upload-icon{font-size:28px;margin-bottom:8px;}
+.photo-upload-area p{font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);line-height:1.5;}
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;}
+.photo-grid-item{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--border);}
+.photo-grid-item img{width:100%;height:100%;object-fit:cover;}
+.photo-grid-item .del-photo{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,0.7);border:none;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.photo-grid-item .photo-uploading{position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:10px;color:#fff;}
+
+/* MEMORY GALLERY */
+#galleryOverlay{position:fixed;inset:0;background:var(--bg);z-index:3000;display:flex;flex-direction:column;transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);}
+#galleryOverlay.open{transform:translateY(0);}
+#galleryHeader{padding:16px 16px 10px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);flex-shrink:0;}
+#galleryHeader h2{font-family:'Playfair Display',serif;font-size:20px;font-weight:900;flex:1;}
+#galleryHeader h2 em{color:var(--gold);font-style:italic;}
+#galleryClose{width:36px;height:36px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+#galleryContent{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch;}
+.gallery-day{margin-bottom:28px;}
+.gallery-day-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.gallery-day-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.gallery-place{margin-bottom:16px;}
+.gallery-place-name{font-size:12px;font-weight:600;color:#aaa;margin-bottom:8px;display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;}
+.gallery-photos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.gallery-photo{aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer;position:relative;}
+.gallery-photo img{width:100%;height:100%;object-fit:cover;transition:transform 0.2s;}
+.gallery-photo:active img{transform:scale(0.97);}
+.gallery-empty{text-align:center;padding:48px 20px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text3);line-height:1.8;}
+
+/* LIGHTBOX */
+#lightbox{position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:5000;display:flex;align-items:center;justify-content:center;flex-direction:column;}
+#lightbox.hidden{display:none;}
+#lightbox img{max-width:100%;max-height:80vh;object-fit:contain;border-radius:8px;}
+#lightboxClose{position:absolute;top:16px;right:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.1);border:none;color:#fff;font-size:20px;cursor:pointer;}
+#lightboxCaption{margin-top:12px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text2);text-align:center;}
+
+/* NOTES */
+.place-notes{padding:6px 14px 8px 50px;font-size:11px;color:var(--text3);font-style:italic;line-height:1.4;}
+
+/* TOAST */
+.toast{position:fixed;bottom:calc(70px + var(--safe-bottom));left:50%;transform:translateX(-50%);background:var(--gold);color:#000;padding:9px 18px;border-radius:20px;font-family:'DM Mono',monospace;font-size:12px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.5);white-space:nowrap;}
+
+/* UPLOAD PROGRESS */
+.upload-progress{position:fixed;top:0;left:0;right:0;height:3px;background:rgba(201,151,58,0.2);z-index:9998;transition:opacity 0.3s;}
+.upload-progress-bar{height:100%;background:var(--gold);transition:width 0.3s;border-radius:0 2px 2px 0;}
+
+/* LEAFLET */
 .leaflet-top.leaflet-right{top:120px;}
 .leaflet-control-zoom{border:1px solid #252525!important;border-radius:10px!important;overflow:hidden;}
-.leaflet-control-zoom a{background:rgba(14,14,14,0.92)!important;color:#aaa!important;border-bottom:1px solid #252525!important;backdrop-filter:blur(8px);}
+.leaflet-control-zoom a{background:rgba(14,14,14,0.92)!important;color:#aaa!important;border-bottom:1px solid #252525!important;}
 .leaflet-control-zoom a:hover{background:#1e1e1e!important;color:#fff!important;}
 </style>
 </head>
 <body>
+
+<!-- UPLOAD PROGRESS -->
+<div class="upload-progress hidden" id="uploadProgress">
+  <div class="upload-progress-bar" id="uploadProgressBar" style="width:0%"></div>
+</div>
+
+<!-- TOP BAR -->
 <div id="topBar">
-  <h1>Lon<em>don</em></h1>
+  <div id="topRow">
+    <h1>Lon<em>don</em></h1>
+    <button id="authBtn" onclick="handleAuth()">
+      <div class="auth-dot" id="authDot"></div>
+      <span id="authLabel">Sign in</span>
+    </button>
+  </div>
   <div id="dayChips">
     <button class="chip active" data-day="all" onclick="filterDay('all',this)">ALL</button>
     <button class="chip" data-day="food" onclick="filterDay('food',this)">&#127836; FOOD</button>
   </div>
 </div>
+
+<!-- MAP -->
 <div id="map"></div>
+
+<!-- LEGEND FAB -->
 <button class="map-fab" id="fabLegend" onclick="toggleLegend()">&#9432;</button>
 <div id="legendPanel" class="hidden">
   <h4>Legend</h4>
   <div id="legendItems"></div>
   <div class="leg-item"><div class="leg-dot" style="background:var(--food)"></div>&#127836; Food spots</div>
 </div>
+
+<!-- BOTTOM SHEET -->
 <div id="sheet" class="peek">
   <div id="sheetHandle"></div>
   <div id="sheetHeader">
     <div id="sheetTitle">All stops</div>
     <div id="sheetCount"></div>
+    <button id="memoryBtn" onclick="openGallery()">&#128247; Memories</button>
   </div>
   <div id="sheetContent"></div>
 </div>
+
+<!-- MEMORY GALLERY -->
+<div id="galleryOverlay">
+  <div id="galleryHeader">
+    <h2>Trip <em>Memories</em></h2>
+    <button id="galleryClose" onclick="closeGallery()">&#10005;</button>
+  </div>
+  <div id="galleryContent"></div>
+</div>
+
+<!-- LIGHTBOX -->
+<div id="lightbox" class="hidden">
+  <button id="lightboxClose" onclick="closeLightbox()">&#10005;</button>
+  <img id="lightboxImg" src="" alt="">
+  <div id="lightboxCaption"></div>
+</div>
+
+<!-- MODAL -->
 <div class="modal-overlay hidden" id="modalOverlay">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -161,7 +288,21 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
     <div class="modal-btns" id="modalBtns"></div>
   </div>
 </div>
+
+<!-- Hidden file input -->
+<input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+
 <script>
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+var CLIENT_ID='968020980126-vt3d4dn1g30i0pq72glv4dobmj081o4q.apps.googleusercontent.com';
+var SCOPES='https://www.googleapis.com/auth/drive.file';
+var FOLDER_NAME='London Map Trip';
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+var gisClient=null, accessToken=null, userInfo=null;
+var rootFolderId=null; // our Drive folder
+var placePhotos={}; // pid → [{id,name,url,thumbUrl}]
+
 var PALETTE=['#FF6B6B','#4ECDC4','#FFE66D','#A8E6CF','#C3A6FF','#FFB347','#FF85A1','#F7DC6F','#82E0AA','#F0B27A'];
 var DAY_COLORS={};
 var TRANSPORT_ALTS={
@@ -178,128 +319,357 @@ var days=[
   {id:'4',name:'Westminster'},{id:'5',name:'City'},{id:'6',name:'East'},
 ];
 var placeData=[
-  {id:'p1',day:'1',num:'01',emoji:'🌿',name:'Isabella Plantation',lat:51.4350,lng:-0.2780,stay:'1-2h',transMin:'55',transMode:'Tube+Bus',desc:'Woodland garden, azaleas. District to Richmond + Bus 371.'},
-  {id:'p2',day:'1',num:'02',emoji:'🌳',name:'Treetop Walkway Kew',lat:51.4785,lng:-0.2956,stay:'2-3h',transMin:'15',transMode:'Walk',desc:'18m canopy walkway. Entry ~£22.'},
-  {id:'p3',day:'2',num:'03',emoji:'🏢',name:'Chiswick Business Park',lat:51.4932,lng:-0.2626,stay:'30m',transMin:'35',transMode:'Tube',desc:'Architecture and gardens.'},
-  {id:'p4',day:'2',num:'04',emoji:'🎨',name:'Mosaic House Chiswick',lat:51.4912,lng:-0.2640,stay:'20m',transMin:'10',transMode:'Walk',desc:'Victorian house covered in mosaic tiles.'},
-  {id:'p5',day:'2',num:'05',emoji:'🌸',name:'Notting Hill',lat:51.5130,lng:-0.2005,stay:'1.5-2h',transMin:'20',transMode:'Taxi',desc:'Portobello Road, pastel houses.'},
-  {id:'p6',day:'2',num:'06',emoji:'⛵',name:'Little Venice',lat:51.5215,lng:-0.1876,stay:'45m',transMin:'30',transMode:'Walk',desc:'Canal basin with narrowboats.'},
-  {id:'p7',day:'2',num:'07',emoji:'🦕',name:'Natural History Museum',lat:51.4967,lng:-0.1764,stay:'2-3h',transMin:'20',transMode:'Tube',desc:'Free. Blue Whale, dinosaurs, gem vault.'},
-  {id:'p8',day:'2',num:'A2',emoji:'🏺',name:'V and A Museum',lat:51.4966,lng:-0.1724,stay:'2h',transMin:'5',transMode:'Walk',desc:'Worlds greatest design museum. Free.'},
-  {id:'p9',day:'2',num:'A3',emoji:'🔬',name:'Science Museum',lat:51.4978,lng:-0.1749,stay:'1.5h',transMin:'5',transMode:'Walk',desc:'Free. Space, codebreaking, IMAX.'},
-  {id:'p10',day:'2',num:'08',emoji:'🛍️',name:'Harrods',lat:51.4994,lng:-0.1635,stay:'1h',transMin:'10',transMode:'Walk',desc:'Egyptian Escalator, Food Hall.'},
-  {id:'p11',day:'2',num:'09',emoji:'🏠',name:'Londons Smallest House',lat:51.5074,lng:-0.1623,stay:'10m',transMin:'12',transMode:'Walk',desc:'1.2m wide Victorian house.'},
-  {id:'p12',day:'2',num:'10',emoji:'🌳',name:'Hyde Park',lat:51.5074,lng:-0.1657,stay:'1.5h',transMin:'5',transMode:'Walk',desc:'Serpentine, Diana Fountain. Free.'},
-  {id:'p13',day:'3',num:'11',emoji:'🖼️',name:'Wallace Collection',lat:51.5157,lng:-0.1540,stay:'1.5h',transMin:'20',transMode:'Tube',desc:'Rembrandt, Rubens. Free.'},
-  {id:'p14',day:'3',num:'12',emoji:'🏛️',name:'Royal Arcade',lat:51.5098,lng:-0.1434,stay:'20m',transMin:'12',transMode:'Walk',desc:'1879 Victorian arcade.'},
-  {id:'p15',day:'3',num:'13',emoji:'☕',name:'Fortnum and Mason Tea',lat:51.5074,lng:-0.1390,stay:'1.5h',transMin:'8',transMode:'Walk',desc:'Book weeks ahead. Est. 1707.'},
-  {id:'p16',day:'3',num:'14',emoji:'🛍️',name:'Oxford Street',lat:51.5152,lng:-0.1419,stay:'1.5h',transMin:'10',transMode:'Walk',desc:'Selfridges food hall.'},
-  {id:'p17',day:'3',num:'21',emoji:'🎡',name:'Piccadilly Circus',lat:51.5100,lng:-0.1340,stay:'15m',transMin:'10',transMode:'Tube',desc:'LED billboards, Eros fountain.'},
-  {id:'p18',day:'3',num:'23',emoji:'🥟',name:'Chinatown',lat:51.5118,lng:-0.1307,stay:'30m',transMin:'5',transMode:'Walk',desc:'Dim sum, dumplings.'},
-  {id:'p19',day:'3',num:'24',emoji:'🎸',name:'Soho',lat:51.5130,lng:-0.1340,stay:'1.5h',transMin:'5',transMode:'Walk',desc:'Carnaby St, record shops.'},
-  {id:'p20',day:'3',num:'25',emoji:'🧱',name:'LEGO Store Leicester Sq',lat:51.5108,lng:-0.1294,stay:'30m',transMin:'5',transMode:'Walk',desc:'Worlds largest LEGO store.'},
-  {id:'p21',day:'3',num:'26',emoji:'💡',name:'Outernet London',lat:51.5165,lng:-0.1298,stay:'20m',transMin:'10',transMode:'Walk',desc:'Free LED immersive art canyon.'},
-  {id:'p22',day:'3',num:'27',emoji:'🖼️',name:'National Gallery',lat:51.5080,lng:-0.1280,stay:'2h',transMin:'10',transMode:'Walk',desc:'Van Gogh, da Vinci. Free.'},
-  {id:'p23',day:'3',num:'28',emoji:'🦁',name:'Trafalgar Square',lat:51.5080,lng:-0.1281,stay:'20m',transMin:'2',transMode:'Walk',desc:'Nelsons Column. Free.'},
-  {id:'p24',day:'3',num:'29',emoji:'🍺',name:'Sherlock Holmes Pub',lat:51.5068,lng:-0.1240,stay:'45m',transMin:'5',transMode:'Walk',desc:'Victorian pub with Holmes memorabilia.'},
-  {id:'p25',day:'3',num:'31',emoji:'🌀',name:'Seven Dials',lat:51.5128,lng:-0.1270,stay:'30m',transMin:'10',transMode:'Walk',desc:'7-way Victorian junction.'},
-  {id:'p26',day:'3',num:'32',emoji:'🌈',name:'Neals Yard',lat:51.5129,lng:-0.1258,stay:'15m',transMin:'3',transMode:'Walk',desc:'Tiny colourful courtyard. Hidden gem.'},
-  {id:'p27',day:'3',num:'33',emoji:'🎪',name:'Covent Garden',lat:51.5117,lng:-0.1242,stay:'1.5h',transMin:'3',transMode:'Walk',desc:'Covered market, street performers.'},
-  {id:'p28',day:'3',num:'34',emoji:'🏛️',name:'British Museum',lat:51.5194,lng:-0.1269,stay:'3h',transMin:'15',transMode:'Walk',desc:'Rosetta Stone, Elgin Marbles. Free.'},
-  {id:'p29',day:'4',num:'15',emoji:'👑',name:'Buckingham Palace',lat:51.5014,lng:-0.1419,stay:'45m',transMin:'20',transMode:'Tube',desc:'Changing of Guard 10:45am daily.'},
-  {id:'p30',day:'4',num:'16',emoji:'🦢',name:'St James Park',lat:51.5025,lng:-0.1340,stay:'40m',transMin:'5',transMode:'Walk',desc:'Pelicans at 2:30pm.'},
-  {id:'p31',day:'4',num:'18',emoji:'🕰️',name:'Big Ben and Parliament',lat:51.5001,lng:-0.1246,stay:'30m',transMin:'12',transMode:'Walk',desc:'Best from Westminster Bridge.'},
-  {id:'p32',day:'4',num:'19',emoji:'⛪',name:'Westminster Abbey',lat:51.4993,lng:-0.1273,stay:'2h',transMin:'3',transMode:'Walk',desc:'Newton, Darwin buried here.'},
-  {id:'p33',day:'4',num:'36',emoji:'🎡',name:'London Eye',lat:51.5033,lng:-0.1196,stay:'1h',transMin:'10',transMode:'Walk',desc:'30-min capsule ride, 135m.'},
-  {id:'p34',day:'4',num:'37',emoji:'🚶',name:'Queens Walk and South Bank',lat:51.5054,lng:-0.1151,stay:'1.5h',transMin:'5',transMode:'Walk',desc:'4km riverside promenade.'},
-  {id:'p35',day:'4',num:'A1',emoji:'🎨',name:'Tate Modern',lat:51.5076,lng:-0.0993,stay:'2h',transMin:'20',transMode:'Walk',desc:'Free. Huge Turbine Hall installations.'},
-  {id:'p36',day:'4',num:'42',emoji:'🧙',name:'Platform 9 3/4',lat:51.5320,lng:-0.1229,stay:'25m',transMin:'25',transMode:'Tube',desc:'Real trolley installation. Free.'},
-  {id:'p37',day:'4',num:'43',emoji:'🪞',name:'Gasholder Park',lat:51.5354,lng:-0.1239,stay:'20m',transMin:'10',transMode:'Walk',desc:'Mirror-polished Victorian gasometer.'},
-  {id:'p38',day:'5',num:'40',emoji:'🌿',name:'Lincolns Inn',lat:51.5154,lng:-0.1147,stay:'40m',transMin:'15',transMode:'Tube',desc:'14th-century legal enclave.'},
-  {id:'p39',day:'5',num:'A8',emoji:'⛪',name:'Temple Church',lat:51.5117,lng:-0.1076,stay:'30m',transMin:'10',transMode:'Walk',desc:'12th-century Knights Templar church.'},
-  {id:'p40',day:'5',num:'41',emoji:'🍺',name:'Ye Olde Mitre',lat:51.5180,lng:-0.1087,stay:'45m',transMin:'5',transMode:'Walk',desc:'1546 pub hidden in alley.'},
-  {id:'p41',day:'5',num:'47',emoji:'⛪',name:'St Pauls Cathedral',lat:51.5138,lng:-0.0984,stay:'2h',transMin:'10',transMode:'Walk',desc:'528 steps, Whispering Gallery.'},
-  {id:'p42',day:'5',num:'48',emoji:'🌉',name:'Millennium Bridge',lat:51.5101,lng:-0.0983,stay:'10m',transMin:'5',transMode:'Walk',desc:'Perfect St Pauls view.'},
-  {id:'p43',day:'5',num:'49',emoji:'🎭',name:'Shakespeares Globe',lat:51.5081,lng:-0.0975,stay:'1.5h',transMin:'3',transMode:'Walk',desc:'5 groundling tickets in summer.'},
-  {id:'p44',day:'5',num:'52',emoji:'🌿',name:'Sky Garden',lat:51.5111,lng:-0.0831,stay:'1h',transMin:'20',transMode:'Walk',desc:'Free rooftop garden, Level 35.'},
-  {id:'p45',day:'5',num:'53',emoji:'🏙️',name:'Horizon 22',lat:51.5153,lng:-0.0822,stay:'45m',transMin:'5',transMode:'Walk',desc:'Europes highest free public gallery.'},
-  {id:'p46',day:'5',num:'55',emoji:'🗿',name:'The Monument',lat:51.5103,lng:-0.0862,stay:'30m',transMin:'10',transMode:'Walk',desc:'311 steps. ~£6.'},
-  {id:'p47',day:'5',num:'56',emoji:'🎬',name:'Leadenhall Market',lat:51.5137,lng:-0.0837,stay:'30m',transMin:'5',transMode:'Walk',desc:'1881 Victorian market. Diagon Alley.'},
-  {id:'p48',day:'5',num:'58',emoji:'🌿',name:'St Dunstan-in-the-East',lat:51.5088,lng:-0.0838,stay:'20m',transMin:'5',transMode:'Walk',desc:'Bombed church with climbing plants.'},
-  {id:'p49',day:'6',num:'44',emoji:'🎸',name:'Camden Town',lat:51.5390,lng:-0.1426,stay:'2h',transMin:'20',transMode:'Tube',desc:'Stables Market, street food, live music.'},
-  {id:'p50',day:'6',num:'66',emoji:'⚓',name:'Pelican Stairs Wapping',lat:51.5055,lng:-0.0576,stay:'20m',transMin:'25',transMode:'Tube',desc:'Ancient river steps, mudlarking.'},
-  {id:'p51',day:'6',num:'68',emoji:'🏗️',name:'Canary Wharf',lat:51.5054,lng:-0.0235,stay:'1h',transMin:'15',transMode:'Tube',desc:'Glass towers, architecture spectacle.'},
-  {id:'p52',day:'6',num:'69',emoji:'🌿',name:'Crossrail Roof Garden',lat:51.5047,lng:-0.0198,stay:'30m',transMin:'5',transMode:'Walk',desc:'Free tropical garden on station roof.'},
-  {id:'p53',day:'6',num:'71',emoji:'🎢',name:'ArcelorMittal Orbit',lat:51.5382,lng:-0.0158,stay:'1h',transMin:'20',transMode:'Tube',desc:'Worlds longest tunnel slide, 178.5m.'},
-  {id:'p54',day:'6',num:'72',emoji:'💡',name:'Gods Own Junkyard',lat:51.5873,lng:-0.0278,stay:'1h',transMin:'35',transMode:'Tube',desc:'Neon wonderland warehouse. Fri-Sun.'},
-  {id:'p55',day:'6',num:'A4',emoji:'🌸',name:'Columbia Road Flowers',lat:51.5296,lng:-0.0716,stay:'1h',transMin:'20',transMode:'Tube',desc:'Sunday 8am-3pm. Riot of colour.'},
-  {id:'p56',day:'6',num:'A9',emoji:'🕯️',name:'Dennis Severs House',lat:51.5203,lng:-0.0730,stay:'1h',transMin:'15',transMode:'Tube',desc:'1700s house frozen in time.'},
+  {id:'p1',day:'1',num:'01',emoji:'🌿',name:'Isabella Plantation',lat:51.4350,lng:-0.2780,stay:'1-2h',transMin:'55',transMode:'Tube+Bus',desc:'Woodland garden, azaleas. District → Richmond + Bus 371.',notes:''},
+  {id:'p2',day:'1',num:'02',emoji:'🌳',name:'Treetop Walkway Kew',lat:51.4785,lng:-0.2956,stay:'2-3h',transMin:'15',transMode:'Walk',desc:'18m canopy walkway. Entry ~£22.',notes:''},
+  {id:'p3',day:'2',num:'03',emoji:'🏢',name:'Chiswick Business Park',lat:51.4932,lng:-0.2626,stay:'30m',transMin:'35',transMode:'Tube',desc:'Architecture and gardens.',notes:''},
+  {id:'p4',day:'2',num:'04',emoji:'🎨',name:'Mosaic House Chiswick',lat:51.4912,lng:-0.2640,stay:'20m',transMin:'10',transMode:'Walk',desc:'Victorian house covered in mosaic tiles.',notes:''},
+  {id:'p5',day:'2',num:'05',emoji:'🌸',name:'Notting Hill',lat:51.5130,lng:-0.2005,stay:'1.5-2h',transMin:'20',transMode:'Taxi',desc:'Portobello Road, pastel houses.',notes:''},
+  {id:'p6',day:'2',num:'06',emoji:'⛵',name:'Little Venice',lat:51.5215,lng:-0.1876,stay:'45m',transMin:'30',transMode:'Walk',desc:'Canal basin with narrowboats.',notes:''},
+  {id:'p7',day:'2',num:'07',emoji:'🦕',name:'Natural History Museum',lat:51.4967,lng:-0.1764,stay:'2-3h',transMin:'20',transMode:'Tube',desc:'Free. Blue Whale, dinosaurs, gem vault.',notes:''},
+  {id:'p8',day:'2',num:'A2',emoji:'🏺',name:'V&A Museum',lat:51.4966,lng:-0.1724,stay:'2h',transMin:'5',transMode:'Walk',desc:'Worlds greatest design museum. Free.',notes:''},
+  {id:'p9',day:'2',num:'A3',emoji:'🔬',name:'Science Museum',lat:51.4978,lng:-0.1749,stay:'1.5h',transMin:'5',transMode:'Walk',desc:'Free. Space, codebreaking, IMAX.',notes:''},
+  {id:'p10',day:'2',num:'08',emoji:'🛍️',name:'Harrods',lat:51.4994,lng:-0.1635,stay:'1h',transMin:'10',transMode:'Walk',desc:'Egyptian Escalator, Food Hall.',notes:''},
+  {id:'p11',day:'2',num:'09',emoji:'🏠',name:'Londons Smallest House',lat:51.5074,lng:-0.1623,stay:'10m',transMin:'12',transMode:'Walk',desc:'1.2m wide Victorian house.',notes:''},
+  {id:'p12',day:'2',num:'10',emoji:'🌳',name:'Hyde Park',lat:51.5074,lng:-0.1657,stay:'1.5h',transMin:'5',transMode:'Walk',desc:'Serpentine, Diana Fountain. Free.',notes:''},
+  {id:'p13',day:'3',num:'11',emoji:'🖼️',name:'Wallace Collection',lat:51.5157,lng:-0.1540,stay:'1.5h',transMin:'20',transMode:'Tube',desc:'Rembrandt, Rubens. Free.',notes:''},
+  {id:'p14',day:'3',num:'12',emoji:'🏛️',name:'Royal Arcade',lat:51.5098,lng:-0.1434,stay:'20m',transMin:'12',transMode:'Walk',desc:'1879 Victorian arcade.',notes:''},
+  {id:'p15',day:'3',num:'13',emoji:'☕',name:'Fortnum & Mason Tea',lat:51.5074,lng:-0.1390,stay:'1.5h',transMin:'8',transMode:'Walk',desc:'Book weeks ahead. Est. 1707.',notes:''},
+  {id:'p16',day:'3',num:'14',emoji:'🛍️',name:'Oxford Street',lat:51.5152,lng:-0.1419,stay:'1.5h',transMin:'10',transMode:'Walk',desc:'Selfridges food hall.',notes:''},
+  {id:'p17',day:'3',num:'21',emoji:'🎡',name:'Piccadilly Circus',lat:51.5100,lng:-0.1340,stay:'15m',transMin:'10',transMode:'Tube',desc:'LED billboards, Eros fountain.',notes:''},
+  {id:'p18',day:'3',num:'23',emoji:'🥟',name:'Chinatown',lat:51.5118,lng:-0.1307,stay:'30m',transMin:'5',transMode:'Walk',desc:'Dim sum, dumplings.',notes:''},
+  {id:'p19',day:'3',num:'24',emoji:'🎸',name:'Soho',lat:51.5130,lng:-0.1340,stay:'1.5h',transMin:'5',transMode:'Walk',desc:'Carnaby St, record shops.',notes:''},
+  {id:'p20',day:'3',num:'25',emoji:'🧱',name:'LEGO Store Leicester Sq',lat:51.5108,lng:-0.1294,stay:'30m',transMin:'5',transMode:'Walk',desc:'Worlds largest LEGO store.',notes:''},
+  {id:'p21',day:'3',num:'26',emoji:'💡',name:'Outernet London',lat:51.5165,lng:-0.1298,stay:'20m',transMin:'10',transMode:'Walk',desc:'Free LED immersive art canyon.',notes:''},
+  {id:'p22',day:'3',num:'27',emoji:'🖼️',name:'National Gallery',lat:51.5080,lng:-0.1280,stay:'2h',transMin:'10',transMode:'Walk',desc:'Van Gogh, da Vinci. Free.',notes:''},
+  {id:'p23',day:'3',num:'28',emoji:'🦁',name:'Trafalgar Square',lat:51.5080,lng:-0.1281,stay:'20m',transMin:'2',transMode:'Walk',desc:'Nelsons Column. Free.',notes:''},
+  {id:'p24',day:'3',num:'29',emoji:'🍺',name:'Sherlock Holmes Pub',lat:51.5068,lng:-0.1240,stay:'45m',transMin:'5',transMode:'Walk',desc:'Victorian pub with Holmes memorabilia.',notes:''},
+  {id:'p25',day:'3',num:'31',emoji:'🌀',name:'Seven Dials',lat:51.5128,lng:-0.1270,stay:'30m',transMin:'10',transMode:'Walk',desc:'7-way Victorian junction.',notes:''},
+  {id:'p26',day:'3',num:'32',emoji:'🌈',name:'Neals Yard',lat:51.5129,lng:-0.1258,stay:'15m',transMin:'3',transMode:'Walk',desc:'Tiny colourful courtyard.',notes:''},
+  {id:'p27',day:'3',num:'33',emoji:'🎪',name:'Covent Garden',lat:51.5117,lng:-0.1242,stay:'1.5h',transMin:'3',transMode:'Walk',desc:'Covered market, street performers.',notes:''},
+  {id:'p28',day:'3',num:'34',emoji:'🏛️',name:'British Museum',lat:51.5194,lng:-0.1269,stay:'3h',transMin:'15',transMode:'Walk',desc:'Rosetta Stone, Elgin Marbles. Free.',notes:''},
+  {id:'p29',day:'4',num:'15',emoji:'👑',name:'Buckingham Palace',lat:51.5014,lng:-0.1419,stay:'45m',transMin:'20',transMode:'Tube',desc:'Changing of Guard 10:45am daily.',notes:''},
+  {id:'p30',day:'4',num:'16',emoji:'🦢',name:'St James Park',lat:51.5025,lng:-0.1340,stay:'40m',transMin:'5',transMode:'Walk',desc:'Pelicans at 2:30pm.',notes:''},
+  {id:'p31',day:'4',num:'18',emoji:'🕰️',name:'Big Ben & Parliament',lat:51.5001,lng:-0.1246,stay:'30m',transMin:'12',transMode:'Walk',desc:'Best from Westminster Bridge.',notes:''},
+  {id:'p32',day:'4',num:'19',emoji:'⛪',name:'Westminster Abbey',lat:51.4993,lng:-0.1273,stay:'2h',transMin:'3',transMode:'Walk',desc:'Newton, Darwin buried here.',notes:''},
+  {id:'p33',day:'4',num:'36',emoji:'🎡',name:'London Eye',lat:51.5033,lng:-0.1196,stay:'1h',transMin:'10',transMode:'Walk',desc:'30-min capsule ride, 135m.',notes:''},
+  {id:'p34',day:'4',num:'37',emoji:'🚶',name:'Queens Walk & South Bank',lat:51.5054,lng:-0.1151,stay:'1.5h',transMin:'5',transMode:'Walk',desc:'4km riverside promenade.',notes:''},
+  {id:'p35',day:'4',num:'A1',emoji:'🎨',name:'Tate Modern',lat:51.5076,lng:-0.0993,stay:'2h',transMin:'20',transMode:'Walk',desc:'Free. Huge Turbine Hall installations.',notes:''},
+  {id:'p36',day:'4',num:'42',emoji:'🧙',name:'Platform 9 3/4',lat:51.5320,lng:-0.1229,stay:'25m',transMin:'25',transMode:'Tube',desc:'Real trolley installation. Free.',notes:''},
+  {id:'p37',day:'4',num:'43',emoji:'🪞',name:'Gasholder Park',lat:51.5354,lng:-0.1239,stay:'20m',transMin:'10',transMode:'Walk',desc:'Mirror-polished Victorian gasometer.',notes:''},
+  {id:'p38',day:'5',num:'40',emoji:'🌿',name:'Lincolns Inn',lat:51.5154,lng:-0.1147,stay:'40m',transMin:'15',transMode:'Tube',desc:'14th-century legal enclave.',notes:''},
+  {id:'p39',day:'5',num:'A8',emoji:'⛪',name:'Temple Church',lat:51.5117,lng:-0.1076,stay:'30m',transMin:'10',transMode:'Walk',desc:'12th-century Knights Templar church.',notes:''},
+  {id:'p40',day:'5',num:'41',emoji:'🍺',name:'Ye Olde Mitre',lat:51.5180,lng:-0.1087,stay:'45m',transMin:'5',transMode:'Walk',desc:'1546 pub hidden in alley.',notes:''},
+  {id:'p41',day:'5',num:'47',emoji:'⛪',name:'St Pauls Cathedral',lat:51.5138,lng:-0.0984,stay:'2h',transMin:'10',transMode:'Walk',desc:'528 steps, Whispering Gallery.',notes:''},
+  {id:'p42',day:'5',num:'48',emoji:'🌉',name:'Millennium Bridge',lat:51.5101,lng:-0.0983,stay:'10m',transMin:'5',transMode:'Walk',desc:'Perfect St Pauls view.',notes:''},
+  {id:'p43',day:'5',num:'49',emoji:'🎭',name:'Shakespeares Globe',lat:51.5081,lng:-0.0975,stay:'1.5h',transMin:'3',transMode:'Walk',desc:'Groundling tickets in summer.',notes:''},
+  {id:'p44',day:'5',num:'52',emoji:'🌿',name:'Sky Garden',lat:51.5111,lng:-0.0831,stay:'1h',transMin:'20',transMode:'Walk',desc:'Free rooftop garden, Level 35.',notes:''},
+  {id:'p45',day:'5',num:'53',emoji:'🏙️',name:'Horizon 22',lat:51.5153,lng:-0.0822,stay:'45m',transMin:'5',transMode:'Walk',desc:'Europes highest free public gallery.',notes:''},
+  {id:'p46',day:'5',num:'55',emoji:'🗿',name:'The Monument',lat:51.5103,lng:-0.0862,stay:'30m',transMin:'10',transMode:'Walk',desc:'311 steps. ~£6.',notes:''},
+  {id:'p47',day:'5',num:'56',emoji:'🎬',name:'Leadenhall Market',lat:51.5137,lng:-0.0837,stay:'30m',transMin:'5',transMode:'Walk',desc:'1881 Victorian market. Diagon Alley.',notes:''},
+  {id:'p48',day:'5',num:'58',emoji:'🌿',name:'St Dunstan-in-the-East',lat:51.5088,lng:-0.0838,stay:'20m',transMin:'5',transMode:'Walk',desc:'Bombed church with climbing plants.',notes:''},
+  {id:'p49',day:'6',num:'44',emoji:'🎸',name:'Camden Town',lat:51.5390,lng:-0.1426,stay:'2h',transMin:'20',transMode:'Tube',desc:'Stables Market, street food, live music.',notes:''},
+  {id:'p50',day:'6',num:'66',emoji:'⚓',name:'Pelican Stairs Wapping',lat:51.5055,lng:-0.0576,stay:'20m',transMin:'25',transMode:'Tube',desc:'Ancient river steps, mudlarking.',notes:''},
+  {id:'p51',day:'6',num:'68',emoji:'🏗️',name:'Canary Wharf',lat:51.5054,lng:-0.0235,stay:'1h',transMin:'15',transMode:'Tube',desc:'Glass towers, architecture spectacle.',notes:''},
+  {id:'p52',day:'6',num:'69',emoji:'🌿',name:'Crossrail Roof Garden',lat:51.5047,lng:-0.0198,stay:'30m',transMin:'5',transMode:'Walk',desc:'Free tropical garden on station roof.',notes:''},
+  {id:'p53',day:'6',num:'71',emoji:'🎢',name:'ArcelorMittal Orbit',lat:51.5382,lng:-0.0158,stay:'1h',transMin:'20',transMode:'Tube',desc:'Worlds longest tunnel slide, 178.5m.',notes:''},
+  {id:'p54',day:'6',num:'72',emoji:'💡',name:'Gods Own Junkyard',lat:51.5873,lng:-0.0278,stay:'1h',transMin:'35',transMode:'Tube',desc:'Neon wonderland warehouse. Fri-Sun.',notes:''},
+  {id:'p55',day:'6',num:'A4',emoji:'🌸',name:'Columbia Road Flowers',lat:51.5296,lng:-0.0716,stay:'1h',transMin:'20',transMode:'Tube',desc:'Sunday 8am-3pm. Riot of colour.',notes:''},
+  {id:'p56',day:'6',num:'A9',emoji:'🕯️',name:'Dennis Severs House',lat:51.5203,lng:-0.0730,stay:'1h',transMin:'15',transMode:'Tube',desc:'1700s house frozen in time.',notes:''},
 ];
 var foodData=[
-  {id:'f1',emoji:'🌯',name:'Wrap It Up Oxford St',lat:51.5152,lng:-0.1419,desc:'Huge wraps from 5.',price:'4-6',near:'Oxford Street'},
-  {id:'f2',emoji:'🥙',name:'Kati Roll Company',lat:51.5128,lng:-0.1340,desc:'Indian street food rolls.',price:'5-7',near:'Soho'},
-  {id:'f3',emoji:'🍜',name:'Bao Soho',lat:51.5120,lng:-0.1300,desc:'Taiwanese steamed buns.',price:'8-12',near:'Soho'},
-  {id:'f4',emoji:'🥐',name:'Paul Bakery Covent Gdn',lat:51.5115,lng:-0.1238,desc:'French sandwiches from 4.',price:'3-6',near:'Covent Garden'},
-  {id:'f5',emoji:'🌮',name:'Wahaca Southbank',lat:51.5062,lng:-0.1145,desc:'Mexican tacos from 4.',price:'8-14',near:'Southbank'},
-  {id:'f6',emoji:'🫕',name:'Dishoom Kings Cross',lat:51.5325,lng:-0.1240,desc:'Legendary bacon naan roll.',price:'8-12',near:'Kings Cross'},
-  {id:'f7',emoji:'🥪',name:'Pret a Manger',lat:51.5080,lng:-0.1280,desc:'Sandwiches 4-6.',price:'3-6',near:'All zones'},
-  {id:'f8',emoji:'🧆',name:'Pilpel Spitalfields',lat:51.5193,lng:-0.0742,desc:'Best falafel in London.',price:'5-7',near:'Spitalfields'},
-  {id:'f9',emoji:'🐟',name:'The Golden Hind',lat:51.5190,lng:-0.1520,desc:'Fish and chips since 1914.',price:'8-12',near:'Marylebone'},
-  {id:'f10',emoji:'🫔',name:'Monmouth Coffee',lat:51.5055,lng:-0.0905,desc:'Excellent coffee from 3.50.',price:'3-5',near:'Borough Market'},
-  {id:'f11',emoji:'🧀',name:'Neals Yard Dairy',lat:51.5051,lng:-0.0910,desc:'Artisan bread and cheese.',price:'5-8',near:'Borough Market'},
-  {id:'f12',emoji:'🍕',name:'Pizza Pilgrims',lat:51.5135,lng:-0.1390,desc:'Neapolitan pizza from 10.',price:'10-14',near:'Soho'},
-  {id:'f13',emoji:'🥗',name:'Leon Multiple',lat:51.5073,lng:-0.1278,desc:'Healthy wraps from 5.',price:'5-8',near:'All zones'},
-  {id:'f14',emoji:'🫙',name:'Padella Borough Mkt',lat:51.5051,lng:-0.0919,desc:'Handmade pasta from 8.',price:'8-13',near:'Borough Market'},
-  {id:'f15',emoji:'🍣',name:'Yo Sushi Canary Wharf',lat:51.5047,lng:-0.0198,desc:'Conveyor belt sushi.',price:'10-18',near:'Canary Wharf'},
-  {id:'f16',emoji:'🌭',name:'Spitalfields Stalls',lat:51.5195,lng:-0.0726,desc:'International street food.',price:'5-8',near:'Spitalfields'},
-  {id:'f17',emoji:'🍔',name:'Byron Burger',lat:51.5115,lng:-0.1242,desc:'Quality burgers from 10.',price:'10-14',near:'Covent Garden'},
-  {id:'f18',emoji:'🥘',name:'Tayyabs Whitechapel',lat:51.5136,lng:-0.0620,desc:'Best Pakistani food in London.',price:'10-15',near:'Whitechapel'},
-  {id:'f19',emoji:'🫖',name:'Pavilion Cafe',lat:51.5366,lng:-0.0342,desc:'Breakfast and lunch around 8.',price:'6-10',near:'Victoria Park'},
-  {id:'f20',emoji:'🍦',name:'Crosstown Doughnuts',lat:51.5130,lng:-0.1360,desc:'Artisan doughnuts around 4.',price:'4',near:'Various'},
+  {id:'f1',emoji:'🌯',name:'Wrap It Up Oxford St',lat:51.5152,lng:-0.1419,desc:'Huge wraps from £5.',price:'£4-6',near:'Oxford Street'},
+  {id:'f2',emoji:'🥙',name:'Kati Roll Company',lat:51.5128,lng:-0.1340,desc:'Indian street food rolls ~£6.',price:'£5-7',near:'Soho'},
+  {id:'f3',emoji:'🍜',name:'Bao Soho',lat:51.5120,lng:-0.1300,desc:'Taiwanese steamed buns ~£6.',price:'£8-12',near:'Soho'},
+  {id:'f4',emoji:'🥐',name:'Paul Bakery Covent Gdn',lat:51.5115,lng:-0.1238,desc:'French sandwiches from £4.',price:'£3-6',near:'Covent Garden'},
+  {id:'f5',emoji:'🌮',name:'Wahaca Southbank',lat:51.5062,lng:-0.1145,desc:'Mexican tacos from £4.',price:'£8-14',near:'Southbank'},
+  {id:'f6',emoji:'🫕',name:'Dishoom Kings Cross',lat:51.5325,lng:-0.1240,desc:'Legendary bacon naan roll.',price:'£8-12',near:'Kings Cross'},
+  {id:'f7',emoji:'🥪',name:'Pret a Manger',lat:51.5080,lng:-0.1280,desc:'Sandwiches £4-6.',price:'£3-6',near:'All zones'},
+  {id:'f8',emoji:'🧆',name:'Pilpel Spitalfields',lat:51.5193,lng:-0.0742,desc:'Best falafel in London.',price:'£5-7',near:'Spitalfields'},
+  {id:'f9',emoji:'🐟',name:'The Golden Hind',lat:51.5190,lng:-0.1520,desc:'Fish & chips since 1914.',price:'£8-12',near:'Marylebone'},
+  {id:'f10',emoji:'🫔',name:'Monmouth Coffee',lat:51.5055,lng:-0.0905,desc:'Coffee from £3.50.',price:'£3-5',near:'Borough Market'},
+  {id:'f11',emoji:'🧀',name:'Neals Yard Dairy',lat:51.5051,lng:-0.0910,desc:'Artisan bread & cheese.',price:'£5-8',near:'Borough Market'},
+  {id:'f12',emoji:'🍕',name:'Pizza Pilgrims',lat:51.5135,lng:-0.1390,desc:'Neapolitan pizza from £10.',price:'£10-14',near:'Soho'},
+  {id:'f13',emoji:'🥗',name:'Leon Multiple',lat:51.5073,lng:-0.1278,desc:'Healthy wraps from £5.',price:'£5-8',near:'All zones'},
+  {id:'f14',emoji:'🫙',name:'Padella Borough Mkt',lat:51.5051,lng:-0.0919,desc:'Handmade pasta from £8.',price:'£8-13',near:'Borough Market'},
+  {id:'f15',emoji:'🍣',name:'Yo Sushi Canary Wharf',lat:51.5047,lng:-0.0198,desc:'Conveyor belt sushi.',price:'£10-18',near:'Canary Wharf'},
+  {id:'f16',emoji:'🌭',name:'Spitalfields Stalls',lat:51.5195,lng:-0.0726,desc:'International street food.',price:'£5-8',near:'Spitalfields'},
+  {id:'f17',emoji:'🍔',name:'Byron Burger',lat:51.5115,lng:-0.1242,desc:'Quality burgers from £10.',price:'£10-14',near:'Covent Garden'},
+  {id:'f18',emoji:'🥘',name:'Tayyabs Whitechapel',lat:51.5136,lng:-0.0620,desc:'Best Pakistani food.',price:'£10-15',near:'Whitechapel'},
+  {id:'f19',emoji:'🫖',name:'Pavilion Cafe',lat:51.5366,lng:-0.0342,desc:'Breakfast/lunch ~£8.',price:'£6-10',near:'Victoria Park'},
+  {id:'f20',emoji:'🍦',name:'Crosstown Doughnuts',lat:51.5130,lng:-0.1360,desc:'Artisan doughnuts ~£4.',price:'£4',near:'Various'},
 ];
+
+// ── GOOGLE AUTH ───────────────────────────────────────────────────────────────
+function initGoogleAuth(){
+  gisClient=google.accounts.oauth2.initTokenClient({
+    client_id:CLIENT_ID,
+    scope:SCOPES+' https://www.googleapis.com/auth/userinfo.profile',
+    callback:function(resp){
+      if(resp.error){showToast('Sign in failed');return;}
+      accessToken=resp.access_token;
+      fetchUserInfo();
+    }
+  });
+}
+
+function handleAuth(){
+  if(accessToken){
+    // Sign out
+    google.accounts.oauth2.revoke(accessToken,function(){});
+    accessToken=null; userInfo=null; rootFolderId=null;
+    updateAuthUI();
+    showToast('Signed out');
+  } else {
+    if(!gisClient) initGoogleAuth();
+    gisClient.requestAccessToken();
+  }
+}
+
+function fetchUserInfo(){
+  fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+accessToken}})
+    .then(function(r){return r.json();})
+    .then(function(info){
+      userInfo=info;
+      updateAuthUI();
+      showToast('Welcome, '+info.given_name+'!');
+      ensureDriveFolder();
+    }).catch(function(){showToast('Could not get user info');});
+}
+
+function updateAuthUI(){
+  var dot=document.getElementById('authDot');
+  var label=document.getElementById('authLabel');
+  var btn=document.getElementById('authBtn');
+  if(userInfo){
+    dot.className='auth-dot connected';
+    label.textContent=userInfo.given_name;
+    if(userInfo.picture){
+      btn.innerHTML='<img src="'+userInfo.picture+'" alt=""><span>'+userInfo.given_name+'</span>';
+    }
+  } else {
+    btn.innerHTML='<div class="auth-dot" id="authDot"></div><span id="authLabel">Sign in</span>';
+  }
+}
+
+// ── GOOGLE DRIVE ──────────────────────────────────────────────────────────────
+function driveApi(method,url,body){
+  var opts={method:method,headers:{Authorization:'Bearer '+accessToken}};
+  if(body){
+    if(body instanceof FormData){opts.body=body;}
+    else{opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body);}
+  }
+  return fetch(url,opts).then(function(r){return r.json();});
+}
+
+function ensureDriveFolder(){
+  // Check if folder exists
+  driveApi('GET','https://www.googleapis.com/drive/v3/files?q=name%3D\'London+Map+Trip\'+and+mimeType%3D\'application%2Fvnd.google-apps.folder\'+and+trashed%3Dfalse&fields=files(id,name)')
+  .then(function(res){
+    if(res.files&&res.files.length>0){
+      rootFolderId=res.files[0].id;
+      loadAllPhotos();
+    } else {
+      // Create folder
+      driveApi('POST','https://www.googleapis.com/drive/v3/files',{
+        name:FOLDER_NAME,mimeType:'application/vnd.google-apps.folder'
+      }).then(function(f){rootFolderId=f.id;showToast('Drive folder created!');});
+    }
+  });
+}
+
+function getOrCreatePlaceFolder(pid,placeName,cb){
+  if(!accessToken||!rootFolderId){cb(null);return;}
+  var safeName=placeName.replace(/[^a-zA-Z0-9 ]/g,'').trim()||pid;
+  var folderName=pid+'_'+safeName;
+  driveApi('GET','https://www.googleapis.com/drive/v3/files?q=name%3D\''+encodeURIComponent(folderName)+'\'+and+\''+rootFolderId+'\'+in+parents+and+trashed%3Dfalse&fields=files(id,name)')
+  .then(function(res){
+    if(res.files&&res.files.length>0){cb(res.files[0].id);}
+    else{
+      driveApi('POST','https://www.googleapis.com/drive/v3/files',{
+        name:folderName,mimeType:'application/vnd.google-apps.folder',parents:[rootFolderId]
+      }).then(function(f){cb(f.id);});
+    }
+  }).catch(function(){cb(null);});
+}
+
+function uploadPhotoToDrive(file,folderId,pid,cb){
+  var meta={name:file.name,parents:[folderId]};
+  var form=new FormData();
+  form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));
+  form.append('file',file);
+  var xhr=new XMLHttpRequest();
+  xhr.open('POST','https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webContentLink,thumbnailLink');
+  xhr.setRequestHeader('Authorization','Bearer '+accessToken);
+  xhr.upload.onprogress=function(e){
+    if(e.lengthComputable){
+      var pct=Math.round(e.loaded/e.total*100);
+      setProgress(pct);
+    }
+  };
+  xhr.onload=function(){
+    var f=JSON.parse(xhr.responseText);
+    // Make file publicly readable
+    fetch('https://www.googleapis.com/drive/v3/files/'+f.id+'/permissions',{
+      method:'POST',
+      headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
+      body:JSON.stringify({role:'reader',type:'anyone'})
+    }).then(function(){
+      var photo={id:f.id,name:f.name,url:'https://drive.google.com/uc?export=view&id='+f.id,thumbUrl:'https://drive.google.com/thumbnail?id='+f.id+'&sz=w300'};
+      if(!placePhotos[pid]) placePhotos[pid]=[];
+      placePhotos[pid].push(photo);
+      cb(photo);
+    });
+  };
+  xhr.send(form);
+}
+
+function loadAllPhotos(){
+  if(!rootFolderId) return;
+  // List all subfolders
+  driveApi('GET','https://www.googleapis.com/drive/v3/files?q=\''+rootFolderId+'\'+in+parents+and+mimeType%3D\'application%2Fvnd.google-apps.folder\'+and+trashed%3Dfalse&fields=files(id,name)')
+  .then(function(res){
+    if(!res.files||!res.files.length) return;
+    var folders=res.files;
+    var loaded=0;
+    folders.forEach(function(folder){
+      var pid=folder.name.split('_')[0];
+      driveApi('GET','https://www.googleapis.com/drive/v3/files?q=\''+folder.id+'\'+in+parents+and+trashed%3Dfalse+and+mimeType+contains+\'image\'&fields=files(id,name)')
+      .then(function(fres){
+        if(fres.files&&fres.files.length){
+          if(!placePhotos[pid]) placePhotos[pid]=[];
+          fres.files.forEach(function(f){
+            // Avoid duplicates
+            if(!placePhotos[pid].find(function(p){return p.id===f.id;})){
+              placePhotos[pid].push({id:f.id,name:f.name,url:'https://drive.google.com/uc?export=view&id='+f.id,thumbUrl:'https://drive.google.com/thumbnail?id='+f.id+'&sz=w300'});
+            }
+          });
+        }
+        loaded++;
+        if(loaded===folders.length){rebuild();}
+      });
+    });
+  });
+}
+
+function deletePhotoFromDrive(fileId,pid){
+  fetch('https://www.googleapis.com/drive/v3/files/'+fileId,{method:'DELETE',headers:{Authorization:'Bearer '+accessToken}})
+  .then(function(){
+    if(placePhotos[pid]) placePhotos[pid]=placePhotos[pid].filter(function(p){return p.id!==fileId;});
+    rebuild(); showToast('Photo deleted');
+  });
+}
+
+// ── PROGRESS ──────────────────────────────────────────────────────────────────
+function setProgress(pct){
+  var el=document.getElementById('uploadProgress');
+  var bar=document.getElementById('uploadProgressBar');
+  el.classList.remove('hidden');
+  bar.style.width=pct+'%';
+  if(pct>=100){setTimeout(function(){el.classList.add('hidden');bar.style.width='0%';},800);}
+}
+
+// ── PHOTO UPLOAD TRIGGER ─────────────────────────────────────────────────────
+var currentUploadPid=null;
+document.getElementById('fileInput').addEventListener('change',function(e){
+  var files=Array.from(e.target.files);
+  if(!files.length||!currentUploadPid) return;
+  var p=placeData.find(function(x){return x.id===currentUploadPid;});
+  if(!p){showToast('Place not found');return;}
+  if(!accessToken){showToast('Please sign in first');return;}
+  showToast('Uploading '+files.length+' photo(s)...');
+  getOrCreatePlaceFolder(p.id,p.name,function(folderId){
+    if(!folderId){showToast('Could not create Drive folder');return;}
+    var uploaded=0;
+    files.forEach(function(file){
+      uploadPhotoToDrive(file,folderId,p.id,function(){
+        uploaded++;
+        if(uploaded===files.length){
+          showToast('Uploaded!');
+          rebuild();
+          // Refresh popup if open
+          if(p.marker&&map.hasLayer(p.marker)){
+            p.marker.setPopupContent(buildPlacePopup(p));
+          }
+        }
+      });
+    });
+  });
+  e.target.value='';
+});
+
+function triggerPhotoUpload(pid){
+  if(!accessToken){showToast('Sign in first to add photos');return;}
+  currentUploadPid=pid;
+  document.getElementById('fileInput').click();
+}
+
+// ── MAP ───────────────────────────────────────────────────────────────────────
 var map=L.map('map',{center:[51.5074,-0.1278],zoom:13,zoomControl:true,tap:true});
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© CARTO',maxZoom:19}).addTo(map);
 var allPolylines={},foodMarkers={};
 var currentFilter='all',legendVisible=false;
 var expandedTrans={},dragSrcId=null;
 var nextDayNum=8,nextPlaceId=300;
+
+// Sheet
 var sheet=document.getElementById('sheet');
-var sheetStates=['peek','half','full'];
-var sheetState='peek';
+var sheetStates=['peek','half','full'],sheetState='peek';
 var touchStartY=0,touchStartTime=0;
 document.getElementById('sheetHandle').addEventListener('touchstart',function(e){touchStartY=e.touches[0].clientY;touchStartTime=Date.now();},{passive:true});
 document.getElementById('sheetHandle').addEventListener('touchend',function(e){
   var dy=e.changedTouches[0].clientY-touchStartY;
   var dt=Date.now()-touchStartTime;
-  if(Math.abs(dy)<10&&dt<250){var idx=sheetStates.indexOf(sheetState);setSheet(sheetStates[(idx+1)%sheetStates.length]);}
-  else if(dy<-30){var idx=sheetStates.indexOf(sheetState);if(idx<sheetStates.length-1)setSheet(sheetStates[idx+1]);}
-  else if(dy>30){var idx=sheetStates.indexOf(sheetState);if(idx>0)setSheet(sheetStates[idx-1]);}
+  var idx=sheetStates.indexOf(sheetState);
+  if(Math.abs(dy)<10&&dt<250){setSheet(sheetStates[(idx+1)%sheetStates.length]);}
+  else if(dy<-30&&idx<sheetStates.length-1){setSheet(sheetStates[idx+1]);}
+  else if(dy>30&&idx>0){setSheet(sheetStates[idx-1]);}
 },{passive:true});
 function setSheet(s){sheetState=s;sheet.className=s;if(s!=='peek')setTimeout(function(){map.invalidateSize();},360);}
+
 function assignColors(){days.forEach(function(d,i){DAY_COLORS[d.id]=PALETTE[i%PALETTE.length];});}
-function makeIcon(color,num,emoji){
-  var h='<div class="marker-pin"><div class="marker-circle" style="background:'+color+';border-color:'+color+'bb;"><span class="m-emoji">'+emoji+'</span><span class="m-num">'+num+'</span></div><div style="width:2px;height:5px;margin-top:-1px;background:'+color+'99;"></div></div>';
+
+function makeIcon(color,num,emoji,hasPhotos){
+  var dot=hasPhotos?'<div class="marker-photo-dot"></div>':'';
+  var h='<div class="marker-pin"><div class="marker-circle" style="background:'+color+';border-color:'+color+'bb;">'+dot+'<span class="m-emoji">'+emoji+'</span><span class="m-num">'+num+'</span></div><div style="width:2px;height:5px;margin-top:-1px;background:'+color+'99;"></div></div>';
   return L.divIcon({html:h,className:'',iconSize:[30,38],iconAnchor:[15,38],popupAnchor:[0,-40]});
 }
 function makeFoodIcon(){return L.divIcon({html:'<div class="food-marker">&#127836;</div>',className:'',iconSize:[22,22],iconAnchor:[11,11],popupAnchor:[0,-14]});}
+
 function ensureMarker(p){
   var color=DAY_COLORS[p.day]||'#888';
-  if(!p.marker){p.marker=L.marker([p.lat,p.lng],{icon:makeIcon(color,p.num,p.emoji)}).addTo(map);}
-  else{p.marker.setIcon(makeIcon(color,p.num,p.emoji));}
-  p.marker.bindPopup(buildPlacePopup(p),{maxWidth:260});
+  var hasPhotos=!!(placePhotos[p.id]&&placePhotos[p.id].length);
+  if(!p.marker){p.marker=L.marker([p.lat,p.lng],{icon:makeIcon(color,p.num,p.emoji,hasPhotos)}).addTo(map);}
+  else{p.marker.setIcon(makeIcon(color,p.num,p.emoji,hasPhotos));}
+  p.marker.bindPopup(buildPlacePopup(p),{maxWidth:280});
 }
+
 function buildPlacePopup(p){
   var color=DAY_COLORS[p.day]||'#888';
   var dn=(days.find(function(d){return d.id===p.day;})||{name:'?'}).name;
+  var photos=placePhotos[p.id]||[];
+  var photosHtml='<div class="popup-photos">';
+  photos.forEach(function(ph){
+    photosHtml+='<img class="popup-photo" src="'+ph.thumbUrl+'" onclick="openLightbox(\''+ph.url+'\',\''+esc(p.name)+'\')"/>';
+  });
+  photosHtml+='<div class="popup-photo-placeholder" onclick="triggerPhotoUpload(\''+p.id+'\')">'
+    +'<span style="font-size:20px;">&#128247;</span>'
+    +(accessToken?'Add photo':'Sign in')
+    +'</div>';
+  photosHtml+='</div>';
+  var notesHtml=p.notes?'<div style="font-size:11px;color:#777;font-style:italic;margin-bottom:8px;line-height:1.4;">'+esc(p.notes)+'</div>':'';
   return '<div class="popup-title">'+p.emoji+' '+p.name+'</div>'
-    +'<div class="popup-meta" style="color:'+color+'">Day '+p.day+' ('+dn+') - '+p.stay+'</div>'
+    +'<div class="popup-meta" style="color:'+color+'">Day '+p.day+' ('+dn+') &middot; '+p.stay+'</div>'
+    +notesHtml
     +'<div class="popup-desc">'+p.desc+'</div>'
+    +photosHtml
     +'<div class="popup-actions">'
-    +'<button class="popup-btn" onclick="openMoveModal(\''+p.id+'\')">Move</button>'
-    +'<button class="popup-btn" onclick="openEditModal(\''+p.id+'\')">Edit</button>'
-    +'<button class="popup-btn danger" onclick="confirmDelete(\''+p.id+'\')">Delete</button>'
+    +'<button class="popup-btn" onclick="openMoveModal(\''+p.id+'\')">&#8596; Move</button>'
+    +'<button class="popup-btn" onclick="openEditModal(\''+p.id+'\')">&#9998; Edit</button>'
+    +'<button class="popup-btn gold" onclick="triggerPhotoUpload(\''+p.id+'\')">&#128247;</button>'
+    +'<button class="popup-btn danger" onclick="confirmDelete(\''+p.id+'\')">&#128465;</button>'
     +'</div>';
 }
+
 function buildFoodMarkers(){
   foodData.forEach(function(f){
     if(!foodMarkers[f.id]){var mk=L.marker([f.lat,f.lng],{icon:makeFoodIcon()}).addTo(map);mk.bindPopup(buildFoodPopup(f),{maxWidth:270});foodMarkers[f.id]=mk;}
@@ -309,18 +679,19 @@ function buildFoodMarkers(){
 function buildFoodPopup(f){
   var opts=days.map(function(d){return'<button class="food-day-btn" style="border-color:'+DAY_COLORS[d.id]+';color:'+DAY_COLORS[d.id]+'" onclick="addFoodToDay(\''+f.id+'\',\''+d.id+'\')">Day '+d.id+'</button>';}).join('');
   return '<div class="popup-title">'+f.emoji+' '+f.name+'</div>'
-    +'<div class="popup-meta" style="color:var(--food)">'+f.price+' - '+f.near+'</div>'
+    +'<div class="popup-meta" style="color:var(--food)">'+f.price+' &middot; '+f.near+'</div>'
     +'<div class="popup-desc">'+f.desc+'</div>'
-    +'<div style="border-top:1px solid #252525;padding-top:10px;margin-top:4px;">'
+    +'<div style="border-top:1px solid #252525;padding-top:10px;margin-top:6px;">'
     +'<div style="font-family:DM Mono,monospace;font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Add to day:</div>'
     +'<div class="food-day-grid">'+opts+'</div></div>';
 }
 function addFoodToDay(fid,dayId){
   var f=foodData.find(function(x){return x.id===fid;});if(!f)return;
   var newId='p'+(++nextPlaceId);
-  placeData.push({id:newId,day:dayId,num:String(placeData.filter(function(p){return p.day===dayId;}).length+1),emoji:f.emoji,name:f.name,lat:f.lat,lng:f.lng,stay:'1h',transMin:'10',transMode:'Walk',desc:f.desc+' ('+f.price+')',marker:null});
+  placeData.push({id:newId,day:dayId,num:String(placeData.filter(function(p){return p.day===dayId;}).length+1),emoji:f.emoji,name:f.name,lat:f.lat,lng:f.lng,stay:'1h',transMin:'10',transMode:'Walk',desc:f.desc+' ('+f.price+')',notes:'',marker:null});
   map.closePopup();rebuild();showToast(f.emoji+' added to Day '+dayId);
 }
+
 function buildPolylines(){
   Object.values(allPolylines).forEach(function(p){map.removeLayer(p);});allPolylines={};
   days.forEach(function(d){
@@ -328,6 +699,8 @@ function buildPolylines(){
     if(grp.length>1)allPolylines[d.id]=L.polyline(grp.map(function(p){return[p.lat,p.lng];}),{color:DAY_COLORS[d.id],weight:2.5,opacity:0.4,dashArray:'6,8'}).addTo(map);
   });
 }
+
+// ── SHEET ─────────────────────────────────────────────────────────────────────
 var sc=document.getElementById('sheetContent');
 function buildSheet(){
   sc.innerHTML='';
@@ -340,7 +713,7 @@ function buildSheet(){
     var sec=document.createElement('div');sec.className='day-section';sec.dataset.day=d.id;
     var hdr=document.createElement('div');hdr.className='day-sec-header';hdr.style.background=color+'12';
     hdr.innerHTML='<div class="day-sec-dot" style="background:'+color+'"></div>'
-      +'<span class="day-sec-name">Day '+d.id+' - '+d.name+'</span>'
+      +'<span class="day-sec-name">Day '+d.id+' &mdash; '+d.name+'</span>'
       +'<span class="day-sec-count">'+grp.length+'</span>'
       +'<div class="day-sec-actions">'
       +'<button class="icon-btn" onclick="openAddPlaceModal(\''+d.id+'\')">+</button>'
@@ -349,6 +722,7 @@ function buildSheet(){
     sec.appendChild(hdr);
     grp.forEach(function(p,idx){
       var c=DAY_COLORS[p.day];
+      var photos=placePhotos[p.id]||[];
       if(idx>0&&p.transMin){
         var tKey=p.id+'_t';var exp=expandedTrans[tKey];var alts=TRANSPORT_ALTS[p.transMode]||[];
         var tr=document.createElement('div');tr.className='trans-row';
@@ -361,10 +735,14 @@ function buildSheet(){
           sec.appendChild(ad);
         }
       }
-      var row=document.createElement('div');row.className='place-row';row.style.borderLeftColor=c;row.draggable=true;row.dataset.id=p.id;
-      row.innerHTML='<span class="drag-handle">&#8597;</span><span class="place-num">'+p.num+'</span><span class="place-emoji">'+p.emoji+'</span>'
-        +'<div class="place-info"><div class="place-name">'+p.name+'</div><div class="place-stay">'+p.stay+'</div></div>'
+      var row=document.createElement('div');row.className='place-row';row.style.borderLeftColor=c;row.draggable=true;
+      var photoBadge=photos.length?'<span class="photo-badge">&#128247; '+photos.length+'</span>':'';
+      row.innerHTML='<span class="drag-handle">&#8597;</span><span class="place-num">'+p.num+'</span>'
+        +'<span class="place-emoji">'+p.emoji+'</span>'
+        +'<div class="place-info"><div class="place-name">'+p.name+'</div>'
+        +'<div class="place-meta"><span class="place-stay">'+p.stay+'</span>'+photoBadge+'</div></div>'
         +'<div class="place-row-btns">'
+        +'<button class="photo-btn" onclick="event.stopPropagation();triggerPhotoUpload(\''+p.id+'\')">&#128247;</button>'
         +'<button onclick="event.stopPropagation();openMoveModal(\''+p.id+'\')">&#8596;</button>'
         +'<button onclick="event.stopPropagation();openEditModal(\''+p.id+'\')">&#9998;</button>'
         +'<button class="del-btn" onclick="event.stopPropagation();confirmDelete(\''+p.id+'\')">&#10005;</button>'
@@ -375,18 +753,20 @@ function buildSheet(){
       row.addEventListener('dragover',function(e){e.preventDefault();document.querySelectorAll('.place-row').forEach(function(r){r.classList.remove('drag-over');});if(dragSrcId&&dragSrcId!==p.id)row.classList.add('drag-over');});
       row.addEventListener('drop',function(e){e.preventDefault();row.classList.remove('drag-over');if(!dragSrcId||dragSrcId===p.id)return;reorderPlace(dragSrcId,p.id);});
       sec.appendChild(row);
+      if(p.notes){var nt=document.createElement('div');nt.className='place-notes';nt.textContent=p.notes;sec.appendChild(nt);}
     });
     var addBtn=document.createElement('div');addBtn.className='add-place-row';addBtn.innerHTML='<span style="font-size:16px;color:#333">+</span> Add place to Day '+d.id;
     (function(did){addBtn.onclick=function(){openAddPlaceModal(did);};})(d.id);
     sec.appendChild(addBtn);sc.appendChild(sec);
   });
+  // Food
   var fs=document.createElement('div');fs.className='day-section';fs.dataset.day='food';
   var fh=document.createElement('div');fh.className='day-sec-header';fh.style.background='#98FB9810';
   fh.innerHTML='<div class="day-sec-dot" style="background:var(--food)"></div><span class="day-sec-name" style="color:var(--food)">&#127836; Budget Food</span><span class="day-sec-count">'+foodData.length+'</span>';
   fs.appendChild(fh);
   foodData.forEach(function(f){
     var row=document.createElement('div');row.className='food-row';
-    row.innerHTML='<span class="food-emoji">'+f.emoji+'</span><div class="food-info"><div class="food-name">'+f.name+'</div><div style="display:flex;gap:8px;"><span class="food-price">'+f.price+'</span><span class="food-near">'+f.near+'</span></div></div>';
+    row.innerHTML='<span class="food-emoji">'+f.emoji+'</span><div class="food-info"><div class="food-name">'+f.name+'</div><div class="food-sub"><span class="food-price">'+f.price+'</span><span class="food-near">'+f.near+'</span></div></div>';
     (function(ff){row.onclick=function(){map.setView([ff.lat,ff.lng],16);if(foodMarkers[ff.id])foodMarkers[ff.id].openPopup();setSheet('peek');};})(f);
     fs.appendChild(row);
   });
@@ -394,6 +774,7 @@ function buildSheet(){
   var ad=document.createElement('div');ad.className='add-day-row';ad.innerHTML='<span style="font-size:18px;color:#333">+</span> Add new day';ad.onclick=openAddDayModal;sc.appendChild(ad);
   document.querySelectorAll('.day-section').forEach(function(s){s.style.display=(currentFilter==='all'||s.dataset.day===currentFilter)?'block':'none';});
 }
+
 function buildChips(){
   var row=document.getElementById('dayChips');row.innerHTML='';
   var allBtn=document.createElement('button');allBtn.className='chip'+(currentFilter==='all'?' active':'');allBtn.dataset.day='all';allBtn.textContent='ALL';allBtn.onclick=function(){filterDay('all',this);};row.appendChild(allBtn);
@@ -408,11 +789,12 @@ function buildChips(){
   if(currentFilter==='food'){fb.style.background='var(--food)';fb.style.color='#000';}
   fb.onclick=function(){filterDay('food',this);};row.appendChild(fb);
 }
+
 function buildLegend(){
   var el=document.getElementById('legendItems');el.innerHTML='';
   days.filter(function(d){return placeData.some(function(p){return p.day===d.id;});}).forEach(function(d){
     var item=document.createElement('div');item.className='leg-item';
-    item.innerHTML='<div class="leg-dot" style="background:'+DAY_COLORS[d.id]+'"></div>Day '+d.id+' - '+d.name;
+    item.innerHTML='<div class="leg-dot" style="background:'+DAY_COLORS[d.id]+'"></div>Day '+d.id+' &mdash; '+d.name;
     el.appendChild(item);
   });
 }
@@ -439,6 +821,7 @@ function applyFilter(day){
     map.fitBounds(foodData.map(function(f){return[f.lat,f.lng];}),{padding:[60,100]});
   } else{map.setView([51.5074,-0.1278],12);}
 }
+
 function rebuild(){
   assignColors();placeData.forEach(function(p){ensureMarker(p);});
   buildFoodMarkers();buildPolylines();buildSheet();buildChips();buildLegend();applyFilter(currentFilter);
@@ -451,6 +834,50 @@ function reorderPlace(srcId,tgtId){
   placeData.splice(placeData.findIndex(function(p){return p.id===tgtId;}),0,src);
   rebuild();
 }
+
+// ── GALLERY ───────────────────────────────────────────────────────────────────
+function openGallery(){
+  var gc=document.getElementById('galleryContent');gc.innerHTML='';
+  var hasAny=false;
+  days.forEach(function(d){
+    var grp=placeData.filter(function(p){return p.day===d.id;});
+    var dayPhotos=grp.filter(function(p){return placePhotos[p.id]&&placePhotos[p.id].length;});
+    if(!dayPhotos.length) return;
+    hasAny=true;
+    var dayDiv=document.createElement('div');dayDiv.className='gallery-day';
+    dayDiv.innerHTML='<div class="gallery-day-title"><div class="gallery-day-dot" style="background:'+DAY_COLORS[d.id]+'"></div>Day '+d.id+' &mdash; '+d.name+'</div>';
+    dayPhotos.forEach(function(p){
+      var photos=placePhotos[p.id];
+      var placeDiv=document.createElement('div');placeDiv.className='gallery-place';
+      placeDiv.innerHTML='<div class="gallery-place-name">'+p.emoji+' '+p.name+' <span style="color:var(--text3)">('+photos.length+')</span></div>';
+      var grid=document.createElement('div');grid.className='gallery-photos';
+      photos.forEach(function(ph){
+        var item=document.createElement('div');item.className='gallery-photo';
+        item.innerHTML='<img src="'+ph.thumbUrl+'" loading="lazy" alt="'+p.name+'">';
+        item.onclick=function(){openLightbox(ph.url,p.name);};
+        grid.appendChild(item);
+      });
+      placeDiv.appendChild(grid);dayDiv.appendChild(placeDiv);
+    });
+    gc.appendChild(dayDiv);
+  });
+  if(!hasAny){
+    gc.innerHTML='<div class="gallery-empty">&#128247;<br><br>No memories yet.<br>Sign in and tap the camera icon<br>on any place to add photos!</div>';
+  }
+  document.getElementById('galleryOverlay').classList.add('open');
+}
+function closeGallery(){document.getElementById('galleryOverlay').classList.remove('open');}
+
+// ── LIGHTBOX ─────────────────────────────────────────────────────────────────
+function openLightbox(url,caption){
+  document.getElementById('lightboxImg').src=url;
+  document.getElementById('lightboxCaption').textContent=caption;
+  document.getElementById('lightbox').classList.remove('hidden');
+}
+function closeLightbox(){document.getElementById('lightbox').classList.add('hidden');}
+document.getElementById('lightbox').addEventListener('click',function(e){if(e.target===this)closeLightbox();});
+
+// ── MODALS ────────────────────────────────────────────────────────────────────
 function showModal(title,bodyHtml,buttons){
   document.getElementById('modalTitle').textContent=title;
   document.getElementById('modalBody').innerHTML=bodyHtml;
@@ -460,10 +887,11 @@ function showModal(title,bodyHtml,buttons){
 }
 function closeModal(){document.getElementById('modalOverlay').classList.add('hidden');}
 document.getElementById('modalOverlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
 function openMoveModal(pid){
   map.closePopup();
   var p=placeData.find(function(x){return x.id===pid;});if(!p)return;
-  showModal('Move '+p.emoji+' '+p.name,'<p style="font-size:12px;color:#777;margin-bottom:4px;font-family:DM Mono,monospace;">Currently Day '+p.day+'</p><div class="day-grid" id="moveGrid"></div>',[]);
+  showModal('Move '+p.emoji+' '+p.name,'<p style="font-size:12px;color:#777;margin-bottom:6px;font-family:DM Mono,monospace;">Currently Day '+p.day+'</p><div class="day-grid" id="moveGrid"></div>',[]);
   var grid=document.getElementById('moveGrid');
   days.forEach(function(d){
     var c=DAY_COLORS[d.id];var btn=document.createElement('button');
@@ -474,12 +902,13 @@ function openMoveModal(pid){
     grid.appendChild(btn);
   });
   var nb=document.createElement('button');nb.className='day-grid-btn';nb.style.borderColor='#333';nb.style.color='#666';
-  nb.innerHTML='<div style="font-size:13px;">+</div><div style="font-size:10px;">New</div>';
+  nb.innerHTML='<div>+</div><div style="font-size:10px;">New</div>';
   nb.onclick=function(){closeModal();openAddDayModal(function(nid){p.day=nid;rebuild();showToast(p.emoji+' moved to Day '+nid);});};
   grid.appendChild(nb);
   var c2=document.createElement('button');c2.className='btn-cancel';c2.textContent='Cancel';c2.onclick=closeModal;
   document.getElementById('modalBtns').appendChild(c2);
 }
+
 function openEditModal(pid){
   map.closePopup();
   var p=placeData.find(function(x){return x.id===pid;});if(!p)return;
@@ -489,18 +918,24 @@ function openEditModal(pid){
     +'<label>Stay</label><input id="e_s" value="'+p.stay+'">'
     +'<label>Travel from previous (min)</label><input id="e_t" value="'+p.transMin+'" type="number" inputmode="numeric">'
     +'<label>Transport</label><select id="e_m">'+['Walk','Tube','Taxi','Boat','Cycle','Tube+Bus','Bus'].map(function(m){return'<option'+(m===p.transMode?' selected':'')+'>'+m+'</option>';}).join('')+'</select>'
-    +'<label>Description</label><textarea id="e_d">'+esc(p.desc)+'</textarea>',
+    +'<label>Description</label><textarea id="e_d">'+esc(p.desc)+'</textarea>'
+    +'<label>My notes &amp; memories</label><textarea id="e_notes" placeholder="How was it? What did you love?">'+esc(p.notes||'')+'</textarea>',
     [
       {label:'Save',cls:'btn-confirm',action:function(){
-        p.name=document.getElementById('e_n').value||p.name;p.emoji=document.getElementById('e_e').value||p.emoji;
-        p.stay=document.getElementById('e_s').value||p.stay;p.transMin=document.getElementById('e_t').value||p.transMin;
-        p.transMode=document.getElementById('e_m').value;p.desc=document.getElementById('e_d').value||p.desc;
+        p.name=document.getElementById('e_n').value||p.name;
+        p.emoji=document.getElementById('e_e').value||p.emoji;
+        p.stay=document.getElementById('e_s').value||p.stay;
+        p.transMin=document.getElementById('e_t').value||p.transMin;
+        p.transMode=document.getElementById('e_m').value;
+        p.desc=document.getElementById('e_d').value||p.desc;
+        p.notes=document.getElementById('e_notes').value;
         closeModal();rebuild();
       }},
       {label:'Cancel',cls:'btn-cancel',action:closeModal}
     ]
   );
 }
+
 function openAddPlaceModal(dayId){
   showModal('Add to Day '+dayId,
     '<label>Name *</label><input id="ap_n" placeholder="e.g. Borough Market">'
@@ -511,7 +946,7 @@ function openAddPlaceModal(dayId){
     +'<label>Travel from previous (min)</label><input id="ap_t" placeholder="10" type="number" inputmode="numeric">'
     +'<label>Transport</label><select id="ap_m">'+['Walk','Tube','Taxi','Boat','Cycle','Tube+Bus','Bus'].map(function(m){return'<option>'+m+'</option>';}).join('')+'</select>'
     +'<label>Description</label><textarea id="ap_d" placeholder="Brief description..."></textarea>'
-    +'<p style="font-size:10px;color:#555;margin-top:8px;font-family:DM Mono,monospace;">Tip: get lat/lng from Google Maps - long press a location then tap the coordinates.</p>',
+    +'<p style="font-size:10px;color:#555;margin-top:8px;font-family:DM Mono,monospace;">Tip: get lat/lng from Google Maps — long press any location then tap the coordinates.</p>',
     [
       {label:'Add',cls:'btn-confirm',action:function(){
         var n=document.getElementById('ap_n').value;
@@ -521,17 +956,18 @@ function openAddPlaceModal(dayId){
         placeData.push({id:'p'+(++nextPlaceId),day:dayId,num:String(placeData.filter(function(p){return p.day===dayId;}).length+1),
           emoji:document.getElementById('ap_e').value||'📍',name:n,lat:la,lng:lo,
           stay:document.getElementById('ap_s').value||'1h',transMin:document.getElementById('ap_t').value||'10',
-          transMode:document.getElementById('ap_m').value,desc:document.getElementById('ap_d').value||'',marker:null});
+          transMode:document.getElementById('ap_m').value,desc:document.getElementById('ap_d').value||'',notes:'',marker:null});
         closeModal();rebuild();map.setView([la,lo],16);showToast('Added to Day '+dayId);
       }},
       {label:'Cancel',cls:'btn-cancel',action:closeModal}
     ]
   );
 }
+
 function confirmDelete(pid){
   map.closePopup();
   var p=placeData.find(function(x){return x.id===pid;});if(!p)return;
-  showModal('Remove place?','<p style="font-size:13px;color:#aaa;line-height:1.5;">Remove <strong style="color:#f0ebe0;">'+p.emoji+' '+p.name+'</strong> from Day '+p.day+'?</p>',
+  showModal('Remove place?','<p style="font-size:13px;color:#aaa;line-height:1.5;">Remove <strong style="color:#f0ebe0;">'+p.emoji+' '+p.name+'</strong>?<br><span style="font-size:11px;color:#666;">Photos in Google Drive will remain.</span></p>',
     [
       {label:'Remove',cls:'btn-danger',action:function(){
         if(p.marker){map.removeLayer(p.marker);p.marker=null;}
@@ -542,6 +978,7 @@ function confirmDelete(pid){
     ]
   );
 }
+
 function openAddDayModal(cb){
   showModal('New Day','<label>Day name</label><input id="nd_n" placeholder="e.g. North London">',
     [
@@ -554,6 +991,7 @@ function openAddDayModal(cb){
     ]
   );
 }
+
 function editDayName(did){
   var d=days.find(function(x){return x.id===did;});if(!d)return;
   showModal('Rename Day '+did,'<label>Name</label><input id="dn_n" value="'+esc(d.name)+'">',
@@ -563,15 +1001,20 @@ function editDayName(did){
     ]
   );
 }
+
 function modeEmoji(m){return{Walk:'🚶',Tube:'🚇',Taxi:'🚕',Boat:'⛵',Cycle:'🚲',Bus:'🚌','Tube+Bus':'🚇'}[m]||'🚗';}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function showToast(msg){
   var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);
-  setTimeout(function(){t.style.transition='opacity 0.4s';t.style.opacity='0';setTimeout(function(){if(t.parentNode)document.body.removeChild(t);},400);},2000);
+  setTimeout(function(){t.style.transition='opacity 0.4s';t.style.opacity='0';setTimeout(function(){if(t.parentNode)document.body.removeChild(t);},400);},2500);
 }
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
 assignColors();
 placeData.forEach(function(p){ensureMarker(p);});
 buildFoodMarkers();buildPolylines();buildSheet();buildChips();buildLegend();applyFilter('all');setSheet('peek');
+// Init Google Auth after GSI loads
+window.addEventListener('load',function(){setTimeout(function(){if(window.google&&window.google.accounts)initGoogleAuth();},500);});
 </script>
 </body>
 </html>
