@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://accounts.google.com/gsi/client" async defer onload="tryInitGoogleAuth()"></script>
 <style>
 :root{--bg:#0a0a0a;--surface:#141414;--surface2:#1c1c1c;--border:#252525;--text:#f0ebe0;--text2:#999;--text3:#555;--gold:#c9973a;--food:#98FB98;--safe-bottom:env(safe-area-inset-bottom,0px);}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -497,8 +497,12 @@ function initGoogleAuth(){
 }
 
 function handleSignIn(){
+  if(!gisClient){
+    showToast('Google still loading, please try again...');
+    setTimeout(function(){if(gisClient)gisClient.requestAccessToken();},1500);
+    return;
+  }
   showLoading('Signing in...');
-  if(!gisClient) initGoogleAuth();
   gisClient.requestAccessToken();
 }
 
@@ -1393,12 +1397,21 @@ function showToast(msg){
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
+function tryInitGoogleAuth(){
+  if(window.google&&window.google.accounts&&window.google.accounts.oauth2){
+    initGoogleAuth();
+    return true;
+  }
+  return false;
+}
 window.addEventListener('load',function(){
-  setTimeout(function(){
-    if(window.google&&window.google.accounts){
-      initGoogleAuth();
-    }
-  },500);
+  if(!tryInitGoogleAuth()){
+    var attempts=0;
+    var check=setInterval(function(){
+      attempts++;
+      if(tryInitGoogleAuth()||attempts>40) clearInterval(check);
+    },250);
+  }
 });
 </script>
 </body>
