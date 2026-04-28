@@ -591,21 +591,38 @@ function createDataFile(){
 
 function loadDataFromDrive(){
   fetch('https://www.googleapis.com/drive/v3/files/'+dataFileId+'?alt=media',{headers:{Authorization:'Bearer '+accessToken}})
-  .then(function(r){return r.json();})
+  .then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.json();
+  })
   .then(function(data){
-    days=data.days||JSON.parse(JSON.stringify(DEFAULT_DAYS));
-    placeData=data.places||JSON.parse(JSON.stringify(DEFAULT_PLACES));
-    foodData=data.food||JSON.parse(JSON.stringify(DEFAULT_FOOD));
+    // Validate the data looks like ours before applying
+    if(!data||typeof data!=='object'){throw new Error('Invalid data format');}
+    days=data.days&&data.days.length?data.days:JSON.parse(JSON.stringify(DEFAULT_DAYS));
+    placeData=data.places&&data.places.length?data.places:JSON.parse(JSON.stringify(DEFAULT_PLACES));
+    foodData=data.food&&data.food.length?data.food:JSON.parse(JSON.stringify(DEFAULT_FOOD));
     nextDayNum=data.nextDayNum||8;
     nextPlaceId=data.nextPlaceId||400;
-    // Reset markers (they don't persist)
     placeData.forEach(function(p){p.marker=null;});
     loadPhotosFromDrive();
     launchApp();
-  }).catch(function(){
-    // Corrupted file — start fresh
-    createDataFile();
+  }).catch(function(err){
+    // NEVER overwrite data on error — show a retry option instead
+    setLoading(false);
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('loadingScreen').classList.remove('hidden');
+    document.getElementById('loadingText').innerHTML=
+      'Could not load your data.<br><br>'
+      +'<button onclick="loadDataFromDrive()" style="padding:10px 20px;background:var(--gold);border:none;border-radius:8px;color:#000;font-family:DM Mono,monospace;font-size:12px;font-weight:700;cursor:pointer;">Retry</button>'
+      +'&nbsp;&nbsp;<button onclick="forceResetData()" style="padding:10px 20px;background:#2a1010;border:1px solid #5a2020;border-radius:8px;color:#e07a7a;font-family:DM Mono,monospace;font-size:12px;cursor:pointer;">Reset to defaults</button>';
+    console.error('loadDataFromDrive error:', err);
   });
+}
+
+function forceResetData(){
+  // Only called explicitly by user — never automatically
+  if(!confirm('This will reset ALL your places to the defaults and cannot be undone. Are you sure?')) return;
+  createDataFile();
 }
 
 function uploadDataFile(jsonStr, cb){
@@ -619,7 +636,11 @@ function uploadDataFile(jsonStr, cb){
     var xhr=new XMLHttpRequest();
     xhr.open('PATCH','https://www.googleapis.com/upload/drive/v3/files/'+dataFileId+'?uploadType=multipart&fields=id');
     xhr.setRequestHeader('Authorization','Bearer '+accessToken);
-    xhr.onload=function(){var f=JSON.parse(xhr.responseText);if(cb)cb(f.id);};
+    xhr.onload=function(){
+      if(xhr.status>=200&&xhr.status<300){var f=JSON.parse(xhr.responseText);if(cb)cb(f.id);}
+      else{console.error('Drive PATCH error:',xhr.status,xhr.responseText);showSaveIndicator(false);showToast('Save failed — check connection');}
+    };
+    xhr.onerror=function(){console.error('Drive PATCH network error');showSaveIndicator(false);};
     xhr.send(form);
   } else {
     var form=new FormData();
@@ -628,7 +649,11 @@ function uploadDataFile(jsonStr, cb){
     var xhr=new XMLHttpRequest();
     xhr.open('POST','https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id');
     xhr.setRequestHeader('Authorization','Bearer '+accessToken);
-    xhr.onload=function(){var f=JSON.parse(xhr.responseText);if(cb)cb(f.id);};
+    xhr.onload=function(){
+      if(xhr.status>=200&&xhr.status<300){var f=JSON.parse(xhr.responseText);if(cb)cb(f.id);}
+      else{console.error('Drive POST error:',xhr.status,xhr.responseText);showSaveIndicator(false);showToast('Save failed — check connection');}
+    };
+    xhr.onerror=function(){console.error('Drive POST network error');showSaveIndicator(false);};
     xhr.send(form);
   }
 }
@@ -638,6 +663,12 @@ function scheduleSave(){
   showSaveIndicator(true);
   if(saveTimer) clearTimeout(saveTimer);
   saveTimer=setTimeout(function(){
+    // Safety check — never save empty data
+    if(!placeData||placeData.length===0){
+      console.warn('scheduleSave: placeData is empty, skipping save');
+      showSaveIndicator(false);
+      return;
+    }
     var data={
       days:days,
       places:placeData.map(function(p){
@@ -647,10 +678,12 @@ function scheduleSave(){
       }),
       food:foodData,
       nextDayNum:nextDayNum,
-      nextPlaceId:nextPlaceId
+      nextPlaceId:nextPlaceId,
+      savedAt:new Date().toISOString()
     };
     uploadDataFile(JSON.stringify(data,null,2),function(){
       showSaveIndicator(false);
+      console.log('Saved',data.places.length,'places to Drive at',data.savedAt);
     });
   },1500);
 }
