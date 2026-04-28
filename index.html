@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://accounts.google.com/gsi/client" async defer onload="tryInitGoogleAuth()"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root{--bg:#0a0a0a;--surface:#141414;--surface2:#1c1c1c;--border:#252525;--text:#f0ebe0;--text2:#999;--text3:#555;--gold:#c9973a;--food:#98FB98;--safe-bottom:env(safe-area-inset-bottom,0px);}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -486,24 +486,59 @@ var currentFilter='all', legendVisible=false, expandedTrans={};
 
 // ── GOOGLE AUTH ───────────────────────────────────────────────────────────────
 function initGoogleAuth(){
-  gisClient=google.accounts.oauth2.initTokenClient({
-    client_id:CLIENT_ID, scope:SCOPES,
-    callback:function(resp){
-      if(resp.error){setLoading(false);showLoginScreen();showToast('Sign in failed');return;}
-      accessToken=resp.access_token;
-      fetchUserInfo();
-    }
-  });
+  try {
+    gisClient=google.accounts.oauth2.initTokenClient({
+      client_id:CLIENT_ID,
+      scope:SCOPES,
+      callback:function(resp){
+        if(resp.error){
+          console.error('OAuth error:',resp.error,resp.error_description);
+          setLoading(false);
+          showLoginScreen();
+          showToast('Sign in failed: '+resp.error);
+          return;
+        }
+        accessToken=resp.access_token;
+        fetchUserInfo();
+      },
+      error_callback:function(err){
+        console.error('GIS error:',err);
+        setLoading(false);
+        showLoginScreen();
+        showToast('Sign in error - check console');
+      }
+    });
+    console.log('Google auth initialised OK');
+  } catch(e){
+    console.error('initGoogleAuth failed:',e);
+  }
 }
 
 function handleSignIn(){
+  console.log('handleSignIn called, gisClient=',!!gisClient);
   if(!gisClient){
-    showToast('Google still loading, please try again...');
-    setTimeout(function(){if(gisClient)gisClient.requestAccessToken();},1500);
+    // Try one more init attempt
+    if(window.google&&window.google.accounts&&window.google.accounts.oauth2){
+      initGoogleAuth();
+      setTimeout(function(){
+        if(gisClient){showLoading('Signing in...');gisClient.requestAccessToken();}
+        else{showToast('Google auth not ready. Please refresh the page.');}
+      },500);
+    } else {
+      showToast('Google library not loaded. Please check your connection and refresh.');
+      console.error('window.google not available');
+    }
     return;
   }
   showLoading('Signing in...');
-  gisClient.requestAccessToken();
+  try {
+    gisClient.requestAccessToken({prompt:'select_account'});
+  } catch(e){
+    console.error('requestAccessToken failed:',e);
+    setLoading(false);
+    showLoginScreen();
+    showToast('Sign in failed - see console');
+  }
 }
 
 function handleSignOut(){
@@ -1397,21 +1432,19 @@ function showToast(msg){
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-function tryInitGoogleAuth(){
-  if(window.google&&window.google.accounts&&window.google.accounts.oauth2){
-    initGoogleAuth();
-    return true;
-  }
-  return false;
-}
 window.addEventListener('load',function(){
-  if(!tryInitGoogleAuth()){
-    var attempts=0;
-    var check=setInterval(function(){
-      attempts++;
-      if(tryInitGoogleAuth()||attempts>40) clearInterval(check);
-    },250);
-  }
+  var attempts=0;
+  var check=setInterval(function(){
+    attempts++;
+    if(window.google&&window.google.accounts&&window.google.accounts.oauth2){
+      clearInterval(check);
+      initGoogleAuth();
+    } else if(attempts>60){
+      clearInterval(check);
+      var btn=document.querySelector('.google-btn');
+      if(btn){btn.textContent='Could not load Google. Please refresh page.';}
+    }
+  },200);
 });
 </script>
 </body>
