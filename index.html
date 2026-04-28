@@ -853,6 +853,35 @@ function buildSheet(){
     var hdr=document.createElement('div');hdr.className='day-sec-header';hdr.style.background=color+'12';
     hdr.innerHTML='<div class="day-sec-dot" style="background:'+color+'"></div><span class="day-sec-name">Day '+d.id+' &mdash; '+d.name+'</span><span class="day-sec-count">'+grp.length+'</span><div class="day-sec-actions"><button class="icon-btn" onclick="openAddPlaceModal(\''+d.id+'\')">+</button><button class="icon-btn" onclick="editDayName(\''+d.id+'\')">&#9998;</button></div>';
     sec.appendChild(hdr);
+    // Day time summary
+    var totalTravel=grp.reduce(function(s,p){return s+(parseInt(p.transMin)||0);},0);
+    var totalStayMins=grp.reduce(function(s,p){
+      var st=p.stay||'';
+      var mins=0;
+      var rng=st.match(/([0-9.]+)\s*[-to]+\s*([0-9.]+)h/);
+      if(rng){mins=((parseFloat(rng[1])+parseFloat(rng[2]))/2)*60;}
+      else{
+        var hm=st.match(/([0-9.]+)h/);
+        var mm=st.match(/([0-9]+)m/);
+        if(hm)mins+=parseFloat(hm[1])*60;
+        if(mm)mins+=parseInt(mm[1]);
+      }
+      return s+mins;
+    },0);
+    function fmtMins(m){m=Math.round(m);if(m<=0)return'0min';var h=Math.floor(m/60),rm=m%60;return h>0?(h+'h'+(rm?' '+rm+'min':'')):(rm+'min');}
+    var summary=document.createElement('div');
+    summary.style.cssText='display:flex;border-bottom:1px solid var(--border);background:'+color+'08;';
+    summary.innerHTML='<div style="flex:1;padding:7px 14px;display:flex;align-items:center;gap:7px;border-right:1px solid var(--border);">'
+      +'<span style="font-size:14px;">🚇</span>'
+      +'<div><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:1px;">Total travel</div>'
+      +'<div style="font-family:DM Mono,monospace;font-size:13px;color:'+color+';font-weight:600;">'+fmtMins(totalTravel)+'</div></div>'
+      +'</div>'
+      +'<div style="flex:1;padding:7px 14px;display:flex;align-items:center;gap:7px;">'
+      +'<span style="font-size:14px;">⏱️</span>'
+      +'<div><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:1px;">Total visiting</div>'
+      +'<div style="font-family:DM Mono,monospace;font-size:13px;color:'+color+';font-weight:600;">'+fmtMins(totalStayMins)+'</div></div>'
+      +'</div>';
+    sec.appendChild(summary);
 
     grp.forEach(function(p,idx){
       var c=DAY_COLORS[p.day],photos=placePhotos[p.id]||[];
