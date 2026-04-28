@@ -564,7 +564,7 @@ function buildSheet(){
       }
       var row=document.createElement('div');row.className='place-row';row.style.borderLeftColor=c;row.draggable=true;
       var pb=photos.length?'<span class="photo-badge">&#128247; '+photos.length+'</span>':'';
-      row.innerHTML='<span class="drag-handle">&#8597;</span><span class="place-num">'+p.num+'</span><span class="place-emoji">'+p.emoji+'</span><div class="place-info"><div class="place-name">'+p.name+'</div><div class="place-meta"><span class="place-stay">'+p.stay+'</span>'+pb+'</div></div><div class="place-row-btns"><button class="photo-btn" onclick="event.stopPropagation();triggerPhotoUpload(\''+p.id+'\')">&#128247;</button><button onclick="event.stopPropagation();openMoveModal(\''+p.id+'\')">&#8596;</button><button onclick="event.stopPropagation();openEditModal(\''+p.id+'\')">&#9998;</button><button class="del-btn" onclick="event.stopPropagation();confirmDelete(\''+p.id+'\')">&#10005;</button></div>';
+      row.innerHTML='<button onclick="event.stopPropagation();movePlaceUp(\''+p.id+'\')" style="background:transparent;border:none;color:#444;font-size:11px;cursor:pointer;padding:2px 3px;" title="Move up">&#9650;</button><button onclick="event.stopPropagation();movePlaceDown(\''+p.id+'\')" style="background:transparent;border:none;color:#444;font-size:11px;cursor:pointer;padding:2px 3px;" title="Move down">&#9660;</button><span class="place-num">'+p.num+'</span><span class="place-emoji">'+p.emoji+'</span><div class="place-info"><div class="place-name">'+p.name+'</div><div class="place-meta"><span class="place-stay">'+p.stay+'</span>'+pb+'</div></div><div class="place-row-btns"><button class="photo-btn" onclick="event.stopPropagation();triggerPhotoUpload(\''+p.id+'\')">&#128247;</button><button onclick="event.stopPropagation();openMoveModal(\''+p.id+'\')">&#8596;</button><button onclick="event.stopPropagation();openEditModal(\''+p.id+'\')">&#9998;</button><button class="del-btn" onclick="event.stopPropagation();confirmDelete(\''+p.id+'\')">&#10005;</button></div>';
       (function(pp){row.addEventListener('click',function(){map.setView([pp.lat,pp.lng],16);if(pp.marker)pp.marker.openPopup();setSheet('peek');});})(p);
       row.addEventListener('dragstart',function(e){dragSrcId=p.id;setTimeout(function(){row.classList.add('dragging');},0);e.dataTransfer.effectAllowed='move';});
       row.addEventListener('dragend',function(){row.classList.remove('dragging');dragSrcId=null;});
@@ -624,6 +624,24 @@ function rebuild(){assignColors();placeData.forEach(function(p){ensureMarker(p);
 function reorderPlace(srcId,tgtId){
   var si=placeData.findIndex(function(p){return p.id===srcId;}),ti=placeData.findIndex(function(p){return p.id===tgtId;});
   if(si===-1||ti===-1)return;var src=placeData.splice(si,1)[0];placeData.splice(placeData.findIndex(function(p){return p.id===tgtId;}),0,src);rebuild();
+}
+function movePlaceUp(pid){
+  var p=placeData.find(function(x){return x.id===pid;});if(!p)return;
+  var same=placeData.filter(function(x){return x.day===p.day;});
+  var gi=same.findIndex(function(x){return x.id===pid;});
+  if(gi<=0)return;
+  var ai=placeData.indexOf(same[gi]),bi=placeData.indexOf(same[gi-1]);
+  var tmp=placeData[ai];placeData[ai]=placeData[bi];placeData[bi]=tmp;
+  rebuild();
+}
+function movePlaceDown(pid){
+  var p=placeData.find(function(x){return x.id===pid;});if(!p)return;
+  var same=placeData.filter(function(x){return x.day===p.day;});
+  var gi=same.findIndex(function(x){return x.id===pid;});
+  if(gi>=same.length-1)return;
+  var ai=placeData.indexOf(same[gi]),bi=placeData.indexOf(same[gi+1]);
+  var tmp=placeData[ai];placeData[ai]=placeData[bi];placeData[bi]=tmp;
+  rebuild();
 }
 function openGallery(){
   var gc=document.getElementById('galleryContent');gc.innerHTML='';var hasAny=false;
